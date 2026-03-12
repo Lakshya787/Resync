@@ -1,0 +1,60 @@
+@import "tailwindcss";
+@import "tailwindcss";
+
+/* ===============================
+   Cold Control – Resync Theme
+   =============================== */
+
+@theme {
+  /* Primary */
+  --color-navy: #0B1220;
+  --color-navy-card: #0F172A;
+
+  /* Secondary */
+  --color-steel: #1E3A8A;
+
+  /* Accent */
+  --color-sync: #38BDF8;
+  --color-sync-hover: #4CC7FA;
+
+  /* Neutral */
+  --color-slate: #94A3B8;
+  --color-softwhite: #E5E7EB;
+
+  /* Status */
+  --color-success: #22C55E;
+  --color-warning: #F59E0B;
+  --color-error: #EF4444;
+
+  /* Borders */
+  --color-border-subtle: rgba(255,255,255,0.08);
+  --color-border-strong: rgba(255,255,255,0.12);
+
+  /* Typography */
+  --font-sans: Inter, system-ui, sans-serif;
+}
+
+/* Global discipline */
+html, body {
+  background-color: var(--color-navy);
+  color: var(--color-softwhite);
+}
+
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes slowRotate {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.logo-rotate {
+  animation: slowRotate 20s linear infinite;
+}
