@@ -9,23 +9,26 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
+const handleLogin = async (e) => {
+  e.preventDefault();
+  console.log("CLICKED");   // 1
 
-    try {
-      const res = await api.post("/auth/login", {
-        email,
-        password
-      });
+  try {
+    console.log("SENDING REQUEST"); // 2
 
-      console.log(res.data);
+    const res = await api.post("/auth/login", {
+      email,
+      password
+    });
 
-      navigate("/home");   // 🔥 ADD THIS
+    console.log("RESPONSE:", res.data); // 3
 
-    } catch (err) {
-      console.log(err);
-    }
-  };
+    navigate("/home");
+
+  } catch (err) {
+    console.log("ERROR:", err); // 🔥 IMPORTANT
+  }
+};
 
   return (
     <div className="min-h-screen bg-navy flex flex-col items-center justify-center px-4">
