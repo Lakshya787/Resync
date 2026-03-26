@@ -11,25 +11,31 @@ export default function Register() {
   const [fullname, setFullname] = useState("");
   const [username, setUsername] = useState("");
 
-  const handleRegister = async (e) => {
-    e.preventDefault();
+const handleRegister = async (e) => {
+  e.preventDefault();
 
-    try {
-      await api.post("/auth/signup", {
-        email,
-        password,
-        fullname,
-        username,
-      });
+  console.log("REGISTER CLICKED");
 
-      alert("Signup successful. Please verify your email.");
-      navigate("/login");
-    } catch (error) {
-      console.log(error.response?.data);
-      alert(error.response?.data?.message || "Signup failed");
-    }
-  };
+  try {
+    console.log("SENDING REGISTER REQUEST");
 
+    const res = await api.post("/auth/signup", {
+      email,
+      password,
+      fullname,
+      username,
+    });
+
+    console.log("REGISTER RESPONSE:", res.data);
+
+    alert("Signup successful");
+    navigate("/login");
+
+  } catch (error) {
+    console.log("REGISTER ERROR:", error);
+    console.log("DATA:", error.response?.data);
+  }
+};
   return (
     <div className="min-h-screen bg-navy flex flex-col items-center justify-center px-4">
 
