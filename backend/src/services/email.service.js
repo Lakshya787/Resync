@@ -7,7 +7,7 @@ export const sendEmail = async ({ to, subject, html }) => {
       {
         sender: {
           name: "Resync",
-          email: "yourverifiedemail@gmail.com", // MUST be verified in Brevo
+          email: "lakshyadewangan78@gmail.com", // MUST be verified in Brevo
         },
         to: [
           {
