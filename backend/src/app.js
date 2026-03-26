@@ -6,24 +6,18 @@ const app = express();
 
 // ✅ Robust CORS setup
 const allowedOrigins = [
-  "http://localhost:5173",      // local frontend
-  process.env.CORS_ORIGIN       // production (Vercel)
+  "http://localhost:5173",
+  process.env.CORS_ORIGIN
 ];
 
 app.use(cors({
   origin: function (origin, callback) {
-    // allow requests with no origin (Postman, mobile apps)
-    if (!origin) return callback(null, true);
-
-    if (allowedOrigins.includes(origin)) {
+    if (!origin || allowedOrigins.includes(origin)) {
       return callback(null, true);
-    } else {
-      return callback(new Error("CORS not allowed"));
     }
+    return callback(new Error("CORS not allowed"));
   },
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"]
+  credentials: true
 }));
 
 // ✅ Handle preflight explicitly
