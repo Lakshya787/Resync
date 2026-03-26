@@ -44,7 +44,7 @@ export const signup = async (req, res) => {
     await user.save();
 
 const verificationURL =
-  `${process.env.BASE_URL}/api/v1/auth/verify-email?token=${verificationToken}`;
+  `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}`;
 
 // ✅ SEND RESPONSE FIRST
 res.status(201).json({
