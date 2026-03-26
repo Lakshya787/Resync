@@ -227,7 +227,19 @@ export const createGoal = async (req, res) => {
       description,
       createdBy: userId
     });
+    /* check active goal */
 
+const existingActiveGoal = await UserGoal.findOne({
+  user: userId,
+  status: "active"
+});
+
+if (existingActiveGoal) {
+  return res.status(400).json({
+    success: false,
+    message: "You already have an active goal. Complete or deactivate it first."
+  });
+}
     /* activate goal for user */
 
     const userGoal = await UserGoal.create({

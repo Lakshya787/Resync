@@ -1,0 +1,269 @@
+🎯 BACKEND PRD — Multiplayer Card Game (WhiteWashers-like)
+1. 📌 Product Overview
+
+The system is a real-time multiplayer card game backend that enables multiple players to:
+
+Create and join game rooms (private or shareable ID)
+Participate in turn-based card gameplay
+Receive real-time updates of game state
+Interact through event-based communication (no voice chat)
+
+The backend must act as the single authoritative source of truth for all game logic and state.
+
+2. 🎯 Core Objectives
+
+The backend must satisfy the following:
+
+Performance
+Game action response time must be under 150 ms
+Real-time updates must propagate within 50 ms
+Scalability
+Support at least 1000 concurrent rooms
+Support horizontal scaling across multiple servers
+Reliability
+Prevent desynchronization between players
+Handle disconnects and reconnections gracefully
+Security
+Prevent cheating by ensuring all validation occurs server-side
+Protect all endpoints with authentication where required
+3. 🧠 System Architecture Requirements
+
+The backend must include the following logical layers:
+
+3.1 API Layer
+Handles HTTP requests for authentication, room management, and fallback game queries
+Must be stateless and horizontally scalable
+3.2 Real-Time Layer
+Maintains persistent connections with clients
+Handles all gameplay communication via event-based messaging
+3.3 Game Engine Layer
+Executes all game rules and validations
+Controls turn order and state transitions
+Determines game outcomes
+3.4 State Management Layer
+Stores all active game states in a fast, in-memory system
+Supports rapid read/write operations
+3.5 Persistence Layer
+Stores long-term data such as users, rooms, and match history
+4. ⚙️ Technology Requirements
+
+The backend must use:
+
+Node.js runtime
+Express.js for REST APIs
+Socket.IO for real-time communication
+MongoDB for persistent storage
+Redis for in-memory state and pub/sub
+5. 🗄️ Data Models (Requirements Only)
+5.1 User Entity
+
+Must store:
+
+Unique identifier
+Username (unique)
+Encrypted password
+Rating or score (default value required)
+Account creation timestamp
+5.2 Room Entity
+
+Must store:
+
+Unique room identifier
+List of players in the room
+Current room status:
+waiting
+playing
+finished
+Creation timestamp
+5.3 Match Entity
+
+Must store:
+
+Room identifier
+List of participating players
+Winner identifier
+Match completion timestamp
+5.4 Game State (In-Memory Only)
+
+Each active game must maintain:
+
+List of players
+Deck of cards
+Cards held by each player
+Current turn (active player)
+Cards played in current round
+Game status (playing, ended)
+Timer (if applicable)
+6. 🔐 Authentication Requirements
+
+The system must:
+
+Support user registration and login
+Use token-based authentication (JWT)
+Require authentication for all protected endpoints
+Validate tokens for every request requiring identity
+Support optional guest login (future scope)
+7. 🏠 Room Management Requirements
+
+The system must support:
+
+Room Creation
+Generate a unique room ID
+Associate the creator with the room
+Initialize room status as “waiting”
+Room Joining
+Allow players to join via room ID
+Validate room existence
+Prevent joining full or active games
+Room Leaving
+Allow players to exit rooms
+Update room player list accordingly
+Room State Retrieval
+Provide current room details (players, status)
+8. 🎮 Game Management Requirements
+8.1 Game Initialization
+
+The system must:
+
+Validate that enough players are present
+Transition room status from “waiting” to “playing”
+Initialize game state
+Distribute cards to players
+Assign the first turn
+8.2 Turn Management
+
+The system must:
+
+Maintain strict turn order
+Ensure only the active player can perform actions
+Automatically advance turns after valid actions
+Handle skipped turns if needed
+8.3 Game Actions
+
+The system must support:
+
+Playing a card
+Ending a turn
+Validating all actions before applying changes
+
+All actions must:
+
+Be validated server-side
+Be rejected if invalid
+Trigger state updates if valid
+8.4 Game Completion
+
+The system must:
+
+Detect game end conditions
+Determine the winner
+Store match results in persistent storage
+Clear active game state from memory
+9. 🔌 Real-Time Communication Requirements
+9.1 Connection Management
+Establish persistent connections per client
+Support joining and leaving rooms dynamically
+9.2 Event Handling
+
+The system must support:
+
+Client → Server Events
+Join room
+Leave room
+Start game
+Play card
+End turn
+Server → Client Events
+Room updates
+Game start notification
+Game state updates
+Turn updates
+Game end notification
+9.3 Broadcasting
+All updates must be broadcast only to relevant room participants
+Payload size must be minimized
+10. ⚡ State Management Requirements (Redis)
+
+The system must:
+
+Store all active game states in Redis
+Use unique keys per room
+Ensure atomic updates to prevent race conditions
+Support fast read/write for real-time updates
+Pub/Sub (Scaling Requirement)
+Must support message broadcasting across multiple backend instances
+Ensure consistency across distributed servers
+11. 🔐 Security Requirements
+
+The backend must:
+
+Validate all client inputs
+Reject unauthorized actions
+Prevent:
+Playing out of turn
+Invalid card usage
+Duplicate actions
+Implement rate limiting to prevent abuse
+12. 🚨 Failure Handling Requirements
+Player Disconnect
+Detect disconnect events
+Mark player as inactive
+Allow reconnection within a defined timeout
+Skip turn if player does not return
+Reconnection
+Restore player session
+Rejoin room automatically
+Sync latest game state
+Server Failure
+Recover active game state from Redis
+Resume gameplay without data loss
+13. 📊 Observability Requirements
+
+The system must include:
+
+Logging
+Track all major events (joins, actions, errors)
+Metrics
+Monitor:
+active rooms
+latency
+error rates
+Tracing
+Track request flow across services
+14. ⚡ Performance Requirements
+Game state updates must not block the event loop
+Redis operations must be optimized for low latency
+Database writes must be minimized during gameplay
+15. 🚀 Scalability Requirements
+Phase 1 (MVP)
+Single server deployment
+Single Redis instance
+Phase 2 (Scaling)
+Multiple backend instances
+Load balancing
+Redis Pub/Sub synchronization
+Phase 3 (Production)
+Microservices separation:
+Authentication service
+Game engine service
+Matchmaking service
+Container orchestration (Kubernetes)
+Regional deployments
+16. 🚀 MVP Scope (STRICT REQUIREMENTS)
+
+The initial version must include:
+
+Authentication system
+Room creation and joining
+Real-time socket connection
+Turn-based gameplay
+Basic game state synchronization
+Redis integration for live state
+17. 💀 Final Constraints
+All game logic must reside in backend
+Frontend must not control game rules
+Redis must be used for active gameplay
+System must remain consistent under concurrent actions
+🎯 FINAL NOTE
+
+This PRD defines what must exist, not how to build it.

@@ -1,14 +1,26 @@
 import { GoogleGenAI } from "@google/genai";
 
-const ai = new GoogleGenAI({
+const primaryAI = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY,
 });
 
-export const generateAI = async (prompt) => {
-  const response = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
-    contents: prompt,
-  });
+const fallbackAI = new GoogleGenAI({
+  apiKey: process.env.GEMINI_API_KEY_1,
+});
 
-  return response.text;
+export const generateAI = async (prompt) => {
+  try {
+    const response = await primaryAI.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: prompt,
+    });
+    return response.text;
+  } catch (err) {
+    // fallback to secondary key
+    const response = await fallbackAI.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: prompt,
+    });
+    return response.text;
+  }
 };

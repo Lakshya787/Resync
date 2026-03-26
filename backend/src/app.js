@@ -22,7 +22,7 @@ import aiRouter from "./routes/ai.route.js";
 import dashboardRouter from "./routes/dashboard.route.js";
 import actionRouter from "./routes/action.route.js";
 import userRouter from "./routes/user.route.js";
-
+import router from "./routes/test.route.js"
 //routes
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/goal", goalRouter);
@@ -32,4 +32,5 @@ app.use("/api/v1/ai", aiRouter);
 app.use("/api/v1/dashboard", dashboardRouter);
 app.use("/api/v1/actions", actionRouter);
 app.use("/api/v1/user", userRouter);
+app.use("/api/v1/test",router)
 export {app}

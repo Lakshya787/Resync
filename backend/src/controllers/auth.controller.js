@@ -1,7 +1,7 @@
 import { User } from "../models/user.model.js";
 import crypto from "crypto";
 import { generateTokenAndSetCookie } from "../utils/generateTokenAndSetCookie.js";
-import { transporter } from "../utils/mailer.js";
+import { sendEmail } from "../services/mail.service.js";
 
 /* =================================
 SIGNUP
@@ -19,12 +19,14 @@ export const signup = async (req, res) => {
       });
     }
 
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({
+      $or: [{ email }, { username }]
+    });
 
     if (existingUser) {
       return res.status(400).json({
         success: false,
-        message: "User already exists"
+        message: "User with this email or username already exists"
       });
     }
 
@@ -42,35 +44,37 @@ export const signup = async (req, res) => {
     await user.save();
 
     const verificationURL =
-      `http://localhost:5000/api/v1/auth/verify-email?token=${verificationToken}`;
+      `${process.env.BASE_URL}/api/v1/auth/verify-email?token=${verificationToken}`;
 
-    await transporter.sendMail({
-      from: '"Resync" <no-reply@resync.com>',
+    await sendEmail({
       to: user.email,
       subject: "Verify Your Email",
       html: `
         <h2>Email Verification</h2>
+        <p>Hello ${fullname},</p>
         <p>Click the link below to verify your email:</p>
         <a href="${verificationURL}">Verify Email</a>
         <p>This link expires in 24 hours.</p>
-      `
+      `,
+      text: `Verify your email: ${verificationURL}`
     });
 
     res.status(201).json({
       success: true,
-      message: "User created. Please verify your email."
+      message: "User created successfully. Please verify your email."
     });
 
   } catch (error) {
 
+    console.error("Signup Error:", error);
+
     res.status(500).json({
       success: false,
-      message: error.message
+      message: "Internal server error"
     });
 
   }
 };
-
 
 /* =================================
 LOGIN
@@ -138,8 +142,6 @@ export const login = async (req, res) => {
 
   }
 };
-
-
 /* =================================
 LOGOUT
 ================================= */
@@ -173,11 +175,17 @@ export const logout = async (req, res) => {
 /* =================================
 VERIFY EMAIL
 ================================= */
-
 export const verifyEmail = async (req, res) => {
   try {
 
     const { token } = req.query;
+
+    if (!token) {
+      return res.status(400).json({
+        success: false,
+        message: "Verification token is missing"
+      });
+    }
 
     const user = await User.findOne({
       verificationToken: token,
@@ -204,12 +212,12 @@ export const verifyEmail = async (req, res) => {
 
   } catch (error) {
 
+    console.error(error);
+
     res.status(500).json({
       success: false,
-      message: error.message
+      message: "Server error"
     });
 
   }
 };
-
-
