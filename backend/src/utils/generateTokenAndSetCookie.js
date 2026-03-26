@@ -7,14 +7,13 @@ export const generateTokenAndSetCookie = (res, userId) => {
     { expiresIn: "7d" }
   );
 
-const isProd = process.env.NODE_ENV === "production";
-
-res.cookie("token", token, {
-  httpOnly: true,
-  secure: isProd,
-  sameSite: isProd ? "None" : "Lax",
-  maxAge: 7 * 24 * 60 * 60 * 1000,
-});
+  res.cookie("token", token, {
+    httpOnly: true,
+    secure: true,          // 🔥 FORCE TRUE
+    sameSite: "None",      // 🔥 REQUIRED
+    path: "/",             // 🔥 ADD THIS
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+  });
 
   return token;
 };
