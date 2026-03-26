@@ -43,27 +43,30 @@ export const signup = async (req, res) => {
 
     await user.save();
 
-    const verificationURL =
-      `${process.env.BASE_URL}/api/v1/auth/verify-email?token=${verificationToken}`;
+const verificationURL =
+  `${process.env.BASE_URL}/api/v1/auth/verify-email?token=${verificationToken}`;
 
-    await sendEmail({
-      to: user.email,
-      subject: "Verify Your Email",
-      html: `
-        <h2>Email Verification</h2>
-        <p>Hello ${fullname},</p>
-        <p>Click the link below to verify your email:</p>
-        <a href="${verificationURL}">Verify Email</a>
-        <p>This link expires in 24 hours.</p>
-      `,
-      text: `Verify your email: ${verificationURL}`
-    });
+// ✅ SEND RESPONSE FIRST
+res.status(201).json({
+  success: true,
+  message: "User created successfully. Please verify your email."
+});
 
-    res.status(201).json({
-      success: true,
-      message: "User created successfully. Please verify your email."
-    });
-
+// ✅ SEND EMAIL IN BACKGROUND (non-blocking)
+sendEmail({
+  to: user.email,
+  subject: "Verify Your Email",
+  html: `
+    <h2>Email Verification</h2>
+    <p>Hello ${fullname},</p>
+    <p>Click the link below to verify your email:</p>
+    <a href="${verificationURL}">Verify Email</a>
+    <p>This link expires in 24 hours.</p>
+  `,
+  text: `Verify your email: ${verificationURL}`
+}).catch(err => {
+  console.error("Email failed:", err.message);
+});
   } catch (error) {
 
     console.error("Signup Error:", error);
