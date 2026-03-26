@@ -9,6 +9,7 @@ SIGNUP
 
 export const signup = async (req, res) => {
   try {
+    console.log("FRONTEND_URL:", process.env.FRONTEND_URL);
 
     const { email, password, fullname, username } = req.body;
 
