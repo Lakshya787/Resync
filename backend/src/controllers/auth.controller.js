@@ -1,7 +1,7 @@
 import { User } from "../models/user.model.js";
 import crypto from "crypto";
 import { generateTokenAndSetCookie } from "../utils/generateTokenAndSetCookie.js";
-import { sendEmail } from "../services/mail.service.js";
+import { sendEmail } from "../services/email.service.js";
 
 /* =================================
 SIGNUP
