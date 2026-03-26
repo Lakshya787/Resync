@@ -7,7 +7,8 @@ const app = express();
 // ✅ Robust CORS setup
 const allowedOrigins = [
   "http://localhost:5173",
-  "https://resync-jwzeatjgw-lakshya787s-projects.vercel.app"
+  "https://resync-liard.vercel.app",
+  
 ];
 
 app.use(cors({
