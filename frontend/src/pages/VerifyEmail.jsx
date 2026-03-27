@@ -19,7 +19,7 @@ export default function VerifyEmailPage() {
       }
 
       try {
-        const res = await axios.get(`${import.meta.env.VITE_API_URL}/auth/verify-email?token=${token}`);
+        const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/v1/auth/verify-email?token=${token}`);
         setStatus("success");
         setMessage(res.data?.message || "Email verified successfully");
         setTimeout(() => navigate("/login"), 3000);
