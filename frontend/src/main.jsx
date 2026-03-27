@@ -31,6 +31,7 @@ const router = createBrowserRouter(
   createRoutesFromElements(
     <>
       {/* Public Pages */}
+      <Route path="/verify-email" element={<VerifyEmailPage />} />
       <Route element={<PublicLayout />}>
 
         <Route path="/" element={<Start />} />
@@ -51,7 +52,6 @@ const router = createBrowserRouter(
         <Route path="/calendar" element={<ActionCalendar />} />
         <Route path="/roadmap" element={<Roadmap />} />
         <Route path="/settings" element={<Settings/>}/>
-        <Route path="/verify-email" element={<VerifyEmailPage />} />
       </Route>
     </>
   )
