@@ -1,5 +1,8 @@
 import { useState } from "react";
 import api from "../Api.js";
+import Card from "../components/Card";
+import Button from "../components/Button";
+import Input from "../components/Input";
 
 export default function Settings() {
 
@@ -15,15 +18,12 @@ export default function Settings() {
     confirmPassword: "",
   });
 
-  // ✅ Separate loading states so both sections are independent
   const [profileLoading, setProfileLoading]   = useState(false);
   const [passwordLoading, setPasswordLoading] = useState(false);
 
-  // ✅ Separate feedback per section — no alert()
-  const [profileMsg, setProfileMsg]   = useState(null); // { type: "success"|"error", text }
+  const [profileMsg, setProfileMsg]   = useState(null);
   const [passwordMsg, setPasswordMsg] = useState(null);
 
-  // ── Handlers ────────────────────────────────────────────────────────────────
   const handleChange = (e) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
@@ -32,11 +32,8 @@ export default function Settings() {
     setPasswordForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  // ── Save Profile ─────────────────────────────────────────────────────────────
   const saveProfile = async () => {
     setProfileMsg(null);
-
-    // ✅ Client-side validation
     if (!form.fullname.trim()) {
       setProfileMsg({ type: "error", text: "Full name is required." });
       return;
@@ -56,11 +53,9 @@ export default function Settings() {
     }
   };
 
-  // ── Update Password ───────────────────────────────────────────────────────────
   const updatePassword = async () => {
     setPasswordMsg(null);
 
-    // ✅ Client-side validation before hitting the API
     if (!passwordForm.currentPassword) {
       setPasswordMsg({ type: "error", text: "Current password is required." });
       return;
@@ -81,7 +76,6 @@ export default function Settings() {
         newPassword: passwordForm.newPassword,
       });
 
-      // ✅ Clear form on success so passwords don't linger in the DOM
       setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
       setPasswordMsg({ type: "success", text: "Password updated successfully." });
     } catch (err) {
@@ -94,140 +88,131 @@ export default function Settings() {
     }
   };
 
-  // ── Shared styles ─────────────────────────────────────────────────────────────
-  const inputClass =
-    "w-full p-2 rounded-lg text-sm bg-[#020617] border border-white/10 text-softwhite " +
-    "placeholder:text-slate-500 focus:outline-none focus:border-sky-500 transition-colors";
-
   const Feedback = ({ msg }) =>
     msg ? (
       <div
-        className={`rounded-lg px-4 py-3 text-sm border ${
+        className={`rounded-md font-bold px-4 py-4 uppercase tracking-wide text-sm mb-6 ${
           msg.type === "success"
-            ? "bg-green-500/10 border-green-500/30 text-green-400"
-            : "bg-red-500/10 border-red-500/30 text-red-400"
+            ? "bg-secondary text-white"
+            : "bg-error text-white"
         }`}
       >
         {msg.text}
       </div>
     ) : null;
 
-  // ── Render ────────────────────────────────────────────────────────────────────
   return (
-    <div className="max-w-2xl mx-auto p-8 space-y-8">
+    <div className="max-w-2xl mx-auto space-y-8 pb-12">
 
-      <h1 className="text-2xl font-bold">Settings</h1>
+      <h1 className="text-3xl font-extrabold uppercase tracking-tight text-foreground mb-8">Settings</h1>
 
       {/* PROFILE */}
-      <div className="bg-[#0F172A] border border-white/10 rounded-2xl p-6 space-y-4">
-        <h2 className="font-semibold text-lg">Profile</h2>
+      <Card bgColor="bg-background">
+        <h2 className="font-extrabold text-xl uppercase tracking-tighter mb-6">Profile</h2>
 
         <Feedback msg={profileMsg} />
 
-        <div>
-          <label className="block text-xs font-medium text-slate-400 mb-1">
-            Full Name
-          </label>
-          <input
-            name="fullname"
-            value={form.fullname}
-            placeholder="Full Name"
-            autoComplete="name"
-            className={inputClass}
-            onChange={handleChange}
-          />
-        </div>
+        <div className="space-y-6">
+          <div>
+            <label className="block text-sm font-bold text-foreground mb-2 uppercase tracking-wide">
+              Full Name
+            </label>
+            <Input
+              name="fullname"
+              value={form.fullname}
+              placeholder="Full Name"
+              autoComplete="name"
+              onChange={handleChange}
+            />
+          </div>
 
-        <div>
-          <label className="block text-xs font-medium text-slate-400 mb-1">
-            Education Level
-          </label>
-          {/* ✅ value added — this was an uncontrolled select */}
-          <select
-            name="education"
-            value={form.education}
-            className={inputClass}
-            onChange={handleChange}
+          <div>
+            <label className="block text-sm font-bold text-foreground mb-2 uppercase tracking-wide">
+              Education Level
+            </label>
+            <select
+              name="education"
+              value={form.education}
+              className="w-full h-14 px-4 bg-muted text-foreground rounded-md focus:border-2 focus:border-primary outline-none"
+              onChange={handleChange}
+            >
+              <option value="">Select education level</option>
+              <option value="class_10">Class 10</option>
+              <option value="class_12">Class 12</option>
+              <option value="btech">BTech</option>
+              <option value="bachelors">Bachelor's</option>
+              <option value="masters">Master's</option>
+            </select>
+          </div>
+
+          <Button
+            onClick={saveProfile}
+            disabled={profileLoading}
+            variant="primary"
           >
-            <option value="">Select education level</option>
-            <option value="class_10">Class 10</option>
-            <option value="class_12">Class 12</option>
-            <option value="btech">BTech</option>
-            <option value="bachelors">Bachelor's</option>
-            <option value="masters">Master's</option>
-          </select>
+            {profileLoading ? "SAVING…" : "SAVE CHANGES"}
+          </Button>
         </div>
-
-        <button
-          onClick={saveProfile}
-          disabled={profileLoading}
-          className="bg-sky-500 text-black px-4 py-2 rounded-xl font-medium text-sm
-                     disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
-        >
-          {profileLoading ? "Saving…" : "Save Changes"}
-        </button>
-      </div>
+      </Card>
 
       {/* CHANGE PASSWORD */}
-      <div className="bg-[#0F172A] border border-white/10 rounded-2xl p-6 space-y-4">
-        <h2 className="font-semibold text-lg">Change Password</h2>
+      <Card bgColor="bg-background">
+        <h2 className="font-extrabold text-xl uppercase tracking-tighter mb-6">Change Password</h2>
 
         <Feedback msg={passwordMsg} />
 
-        <div>
-          <label className="block text-xs font-medium text-slate-400 mb-1">
-            Current Password
-          </label>
-          <input
-            type="password"
-            name="currentPassword"
-            value={passwordForm.currentPassword}
-            placeholder="••••••••"
-            autoComplete="current-password"
-            className={inputClass}
-            onChange={handlePasswordChange}
-          />
-        </div>
+        <div className="space-y-6">
+          <div>
+            <label className="block text-sm font-bold text-foreground mb-2 uppercase tracking-wide">
+              Current Password
+            </label>
+            <Input
+              type="password"
+              name="currentPassword"
+              value={passwordForm.currentPassword}
+              placeholder="••••••••"
+              autoComplete="current-password"
+              onChange={handlePasswordChange}
+            />
+          </div>
 
-        <div>
-          <label className="block text-xs font-medium text-slate-400 mb-1">
-            New Password
-          </label>
-          <input
-            type="password"
-            name="newPassword"
-            value={passwordForm.newPassword}
-            placeholder="••••••••"
-            autoComplete="new-password"
-            className={inputClass}
-            onChange={handlePasswordChange}
-          />
-        </div>
+          <div>
+            <label className="block text-sm font-bold text-foreground mb-2 uppercase tracking-wide">
+              New Password
+            </label>
+            <Input
+              type="password"
+              name="newPassword"
+              value={passwordForm.newPassword}
+              placeholder="••••••••"
+              autoComplete="new-password"
+              onChange={handlePasswordChange}
+            />
+          </div>
 
-        <div>
-          <label className="block text-xs font-medium text-slate-400 mb-1">
-            Confirm New Password
-          </label>
-          <input
-            type="password"
-            name="confirmPassword"
-            value={passwordForm.confirmPassword}
-            placeholder="••••••••"
-            autoComplete="new-password"
-            className={inputClass}
-            onChange={handlePasswordChange}
-          />
-        </div>
+          <div>
+            <label className="block text-sm font-bold text-foreground mb-2 uppercase tracking-wide">
+              Confirm New Password
+            </label>
+            <Input
+              type="password"
+              name="confirmPassword"
+              value={passwordForm.confirmPassword}
+              placeholder="••••••••"
+              autoComplete="new-password"
+              onChange={handlePasswordChange}
+            />
+          </div>
 
-        <button
-          onClick={updatePassword}
-          disabled={passwordLoading}
-          className="bg-sky-500 text-black px-4 py-2 rounded-xl font-medium text-sm
-                     disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
-        >
-          {passwordLoading ? "Updating…" : "Update Password"}
-        </button>
-      </div>
+          <Button
+            onClick={updatePassword}
+            disabled={passwordLoading}
+            variant="danger"
+          >
+            {passwordLoading ? "UPDATING…" : "UPDATE PASSWORD"}
+          </Button>
+        </div>
+      </Card>
 
     </div>
   );

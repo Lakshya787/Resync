@@ -1,0 +1,26 @@
+{
+  "name": "resync-desktop",
+  "version": "1.0.0",
+  "main": "main.js",
+  "type": "module",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^41.1.0",
+    "electron-builder": "^26.8.1"
+  },
+  "build": {
+    "appId": "com.resync.desktop",
+    "productName": "Resync",
+"win": {
+  "target": "nsis",
+ "icon": "assets/icon.ico"
+},
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  }
+}

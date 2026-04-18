@@ -1,21 +1,21 @@
 import { useCallback, useEffect, useState } from "react";
 import api from "../Api";
-
-// ✅ Pure utility outside component — no re-creation on every render
+import Card from "../components/Card";
+import Button from "../components/Button";
+ 
 const formatDate = (dateStr) => {
   if (!dateStr) return "—";
   const d = new Date(dateStr);
   return isNaN(d) ? "—" : d.toDateString();
 };
-
+ 
 export default function Step() {
   const [activeStep, setActiveStep]       = useState(null);
   const [history, setHistory]             = useState([]);
   const [loading, setLoading]             = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
-  const [error, setError]                 = useState(null); // ✅ replaces alert()
-
-  // ── Fetch ───────────────────────────────────────────────────────────────────
+  const [error, setError]                 = useState(null);
+ 
   const fetchData = useCallback(async () => {
     setError(null);
     try {
@@ -31,29 +31,27 @@ export default function Step() {
       setLoading(false);
     }
   }, []);
-
+ 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
-
-  // ── Complete Step ────────────────────────────────────────────────────────────
+ 
   const completeStep = async () => {
-    if (actionLoading) return; // ✅ guard against double-tap
+    if (actionLoading) return;
     setError(null);
     try {
       setActionLoading(true);
       await api.post("/step/complete");
-      await fetchData(); // ✅ await so state is fresh before spinner stops
+      await fetchData();
     } catch (err) {
       setError(err.response?.data?.message || "Failed to complete step");
     } finally {
       setActionLoading(false);
     }
   };
-
-  // ── Generate Next Step ───────────────────────────────────────────────────────
+ 
   const generateNextStep = async () => {
-    if (actionLoading) return; // ✅ guard against double-tap
+    if (actionLoading) return;
     setError(null);
     try {
       setActionLoading(true);
@@ -65,97 +63,91 @@ export default function Step() {
       setActionLoading(false);
     }
   };
-
-  // ── Render ───────────────────────────────────────────────────────────────────
+ 
   if (loading) {
-    return <div className="text-slate-400 animate-pulse">Loading steps…</div>;
+    return <div className="text-foreground/50 font-bold uppercase tracking-widest animate-pulse">Loading steps…</div>;
   }
-
+ 
   return (
-    <div className="space-y-6">
-
-      {/* ✅ Centralised error banner */}
+    <div className="space-y-8">
+ 
       {error && (
-        <div className="rounded-xl bg-red-500/10 border border-red-500/30 px-4 py-3 text-sm text-red-400 flex justify-between items-center">
+        <div className="rounded-md bg-error text-white font-bold px-4 py-4 uppercase tracking-wide text-sm flex justify-between items-center">
           <span>{error}</span>
           <button
             onClick={fetchData}
-            className="ml-4 text-xs underline text-red-300 hover:text-red-200"
+            className="ml-4 underline text-white hover:text-white/80"
           >
-            Retry
+            RETRY
           </button>
         </div>
       )}
-
+ 
       {/* ACTIVE STEP */}
-      <div className="bg-[#0F172A] border border-white/10 p-6 rounded-2xl">
-        <h2 className="text-lg font-semibold mb-2">Active Step</h2>
-
+      <Card bgColor="bg-background">
+        <h2 className="text-xl font-extrabold mb-6 uppercase tracking-tight text-primary">Active Step</h2>
+ 
         {activeStep ? (
           <>
-            <h3 className="text-xl font-medium">{activeStep.title}</h3>
-
+            <h3 className="text-3xl font-extrabold mb-4 text-foreground">{activeStep.title}</h3>
+ 
             {activeStep.description && (
-              <p className="text-sm text-slate-400 mt-2">
+              <p className="text-lg text-foreground/80 font-medium mb-6">
                 {activeStep.description}
               </p>
             )}
-
-            {/* ✅ Safe date rendering — won't show "Invalid Date" */}
-            <p className="text-xs text-slate-500 mt-2">
+ 
+            <p className="text-sm text-secondary font-bold uppercase tracking-widest mb-8">
               Deadline: {formatDate(activeStep.deadline)}
             </p>
-
-            <button
+ 
+            <Button
               onClick={completeStep}
               disabled={actionLoading}
-              className="mt-4 bg-green-500 px-4 py-2 rounded-xl text-sm font-medium text-black
-                         disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+              variant="secondary"
+              className="bg-secondary text-white hover:bg-green-600 w-full md:w-auto"
             >
-              {actionLoading ? "Completing…" : "Mark as Completed"}
-            </button>
+              {actionLoading ? "COMPLETING…" : "MARK AS COMPLETED"}
+            </Button>
           </>
         ) : (
           <>
-            <p className="text-slate-400 mb-4">No active step right now</p>
-
-            <button
+            <p className="text-foreground/60 font-medium mb-6">No active step right now</p>
+ 
+            <Button
               onClick={generateNextStep}
               disabled={actionLoading}
-              className="bg-sky-500 text-black px-4 py-2 rounded-xl font-medium
-                         disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+              variant="primary"
             >
-              {actionLoading ? "Generating…" : "Generate Next Step"}
-            </button>
+              {actionLoading ? "GENERATING…" : "GENERATE NEXT STEP"}
+            </Button>
           </>
         )}
-      </div>
-
+      </Card>
+ 
       {/* STEP HISTORY */}
-      <div className="bg-[#0F172A] border border-white/10 p-6 rounded-2xl">
-        <h2 className="text-lg font-semibold mb-4">Completed Steps</h2>
-
+      <Card bgColor="bg-background">
+        <h2 className="text-xl font-extrabold mb-6 uppercase tracking-tight">Completed Steps</h2>
+ 
         {history.length === 0 ? (
-          <p className="text-slate-400">No steps completed yet</p>
+          <p className="text-foreground/60 font-medium">No steps completed yet</p>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-4">
             {history.map((s) => (
-              // ✅ stepId may be undefined — fall back to index via key
               <div
                 key={s.stepId ?? s._id ?? s.stepName}
-                className="bg-[#020617] p-4 rounded-xl"
+                className="bg-muted p-6 rounded-lg flex flex-col md:flex-row md:items-center justify-between gap-4 border-l-4 border-secondary"
               >
-                <h3 className="font-medium">{s.stepName}</h3>
-                {/* ✅ Safe date rendering */}
-                <p className="text-xs text-slate-400 mt-1">
-                  Completed on {formatDate(s.completedAt)}
+                <h3 className="font-extrabold text-xl">{s.stepName}</h3>
+                <p className="text-sm font-bold text-foreground/50 uppercase tracking-widest">
+                  Completed {formatDate(s.completedAt)}
                 </p>
               </div>
             ))}
           </div>
         )}
-      </div>
-
+      </Card>
+ 
     </div>
   );
 }

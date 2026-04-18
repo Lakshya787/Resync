@@ -17,13 +17,13 @@ export default function Sidebar() {
   const [expanded, setExpanded] = useState(true);
 
   const base =
-    "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-all duration-200";
+    "flex items-center gap-3 rounded-md px-3 py-3 text-sm font-semibold transition-all duration-200";
 
   const active =
-    "bg-navy text-softwhite shadow";
+    "bg-primary text-white scale-[1.02]";
 
   const inactive =
-    "text-slate hover:text-softwhite hover:bg-navy/40";
+    "text-foreground/70 hover:text-foreground hover:bg-muted";
 
   const navItems = [
     { name: "Dashboard", path: "/home", icon: LayoutDashboard },
@@ -44,7 +44,7 @@ export default function Sidebar() {
     <aside
       className={`${
         expanded ? "w-64" : "w-20"
-      } bg-navy-card border-r border-border-subtle p-4 flex flex-col transition-all duration-300`}
+      } bg-background border-r-2 border-border p-4 flex flex-col transition-all duration-300`}
     >
 
       {/* HEADER */}
@@ -53,7 +53,7 @@ export default function Sidebar() {
         {expanded && (
           <div className="flex items-center gap-2">
             <img src="/Icon.png" alt="Resync" className="w-8 h-8" />
-            <span className="text-lg font-semibold text-softwhite">
+            <span className="text-lg font-bold text-foreground uppercase tracking-wider">
               Resync
             </span>
           </div>
@@ -61,7 +61,7 @@ export default function Sidebar() {
 
         <button
           onClick={() => setExpanded(!expanded)}
-          className="text-softwhite"
+          className="text-foreground shrink-0 p-2 hover:bg-muted rounded-md transition-colors"
         >
           <Menu size={20} />
         </button>
@@ -85,7 +85,7 @@ export default function Sidebar() {
               }
             >
 
-              <Icon size={20} />
+              <Icon size={20} strokeWidth={2.5} />
 
               {expanded && <span>{item.name}</span>}
 
@@ -97,15 +97,13 @@ export default function Sidebar() {
       </nav>
 
       {/* FOOTER */}
-      <div className="pt-4 border-t border-border-subtle">
-
+      <div className="pt-4 border-t-2 border-border text-center">
         <Link
           to="/login"
-          className="flex items-center gap-3 text-xs text-slate hover:text-softwhite transition"
+          className={`flex items-center gap-3 text-xs font-bold text-foreground/50 hover:text-error transition uppercase tracking-widest ${expanded ? "justify-start" : "justify-center"}`}
         >
-          {expanded && "Logout"}
+          {expanded ? "Logout" : "X"}
         </Link>
-
       </div>
 
     </aside>

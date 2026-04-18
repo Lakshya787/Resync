@@ -1,16 +1,17 @@
 import { useCallback, useEffect, useState } from "react";
 import api from "../Api.js";
 import StreakFire from "../components/StreakFire.jsx";
- 
-const Home = () => {
+import Card from "../components/Card.jsx";
+import Button from "../components/Button.jsx";
+
+const Dashboard = () => {
   const [dashboard, setDashboard] = useState(null);
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState(null);
- 
-  // ✅ useCallback so the function ref is stable (safe to use in useEffect deps)
+
   const fetchDashboard = useCallback(async () => {
     setLoading(true);
-    setError(null);  // ✅ Clear stale error on every fresh fetch
+    setError(null);
     try {
       const res = await api.get("/dashboard");
       if (res.data.success) {
@@ -19,143 +20,135 @@ const Home = () => {
         setError(res.data.message || "Failed to load dashboard");
       }
     } catch (err) {
-      // ✅ Prefer server message over generic JS error message
       setError(err.response?.data?.message || err.message || "Failed to load dashboard");
     } finally {
       setLoading(false);
     }
   }, []);
- 
+
   useEffect(() => {
     fetchDashboard();
   }, [fetchDashboard]);
- 
-  // ─── Loading ────────────────────────────────────────────────────────────────
+
   if (loading) {
     return (
-      <div className="bg-[#0F172A] border border-white/10 p-6 rounded-xl animate-pulse">
-        <p className="text-slate-400">Loading dashboard…</p>
-      </div>
+      <Card bgColor="bg-background" className="animate-pulse">
+        <p className="text-foreground/50 font-bold uppercase tracking-wider">Loading dashboard…</p>
+      </Card>
     );
   }
- 
-  // ─── Error ──────────────────────────────────────────────────────────────────
+
   if (error) {
     return (
-      <div className="bg-[#0F172A] border border-red-500/30 p-6 rounded-xl">
-        <p className="text-red-400">{error}</p>
-        <button
-          onClick={fetchDashboard}
-          className="mt-4 bg-sky-500 hover:bg-sky-400 transition px-4 py-2 rounded-lg text-black font-medium"
-        >
-          Retry
-        </button>
-      </div>
+      <Card variant="danger" bgColor="bg-background">
+        <p className="text-error font-bold mb-4">{error}</p>
+        <Button onClick={fetchDashboard} variant="danger">
+          RETRY
+        </Button>
+      </Card>
     );
   }
- 
-  // ─── Main ───────────────────────────────────────────────────────────────────
+
   return (
-    <>
+    <div className="space-y-8">
       {/* Welcome */}
-      <div className="bg-gradient-to-r from-sky-500/20 to-indigo-500/20 border border-white/10 p-6 rounded-2xl backdrop-blur shadow-lg">
-        <h1 className="text-3xl font-semibold">
+      <div className="bg-primary text-white p-8 rounded-lg">
+        <h1 className="text-4xl font-extrabold uppercase tracking-tight mb-2">
           Welcome Back, {dashboard?.username || "User"}
         </h1>
-        <p className="text-slate-400 mt-1">
+        <p className="text-white/80 font-medium text-lg">
           Stay consistent. Execution beats motivation.
         </p>
       </div>
- 
+
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-        <div className="bg-[#0F172A] border border-white/10 p-5 rounded-xl shadow flex flex-col items-center">
-          <p className="text-sm text-slate-400">Current Streak</p>
-          <h2 className="text-2xl font-semibold mt-1">
-            {dashboard.streak} days
+        <Card bgColor="bg-background" className="flex flex-col items-center text-center">
+          <p className="text-sm text-foreground/50 font-bold uppercase tracking-widest">Current Streak</p>
+          <h2 className="text-4xl font-extrabold mt-2 text-primary">
+            {dashboard.streak}
           </h2>
-          <StreakFire streak={dashboard.streak} />
-        </div>
- 
-        <div className="bg-[#0F172A] border border-white/10 p-5 rounded-xl shadow">
-          <p className="text-sm text-slate-400">Completed Steps</p>
-          <h2 className="text-2xl font-semibold mt-1">
+          <div className="mt-2 text-accent">
+            <StreakFire streak={dashboard.streak} />
+          </div>
+        </Card>
+
+        <Card bgColor="bg-background" className="text-center">
+          <p className="text-sm text-foreground/50 font-bold uppercase tracking-widest">Completed</p>
+          <h2 className="text-4xl font-extrabold mt-2 text-secondary">
             {dashboard.completedSteps}
           </h2>
-        </div>
- 
-        <div className="bg-[#0F172A] border border-white/10 p-5 rounded-xl shadow">
-          <p className="text-sm text-slate-400">Projects</p>
-          <h2 className="text-2xl font-semibold mt-1">
+        </Card>
+
+        <Card bgColor="bg-background" className="text-center">
+          <p className="text-sm text-foreground/50 font-bold uppercase tracking-widest">Projects</p>
+          <h2 className="text-4xl font-extrabold mt-2 text-accent">
             {dashboard.projectCount}
           </h2>
-        </div>
- 
-        <div className="bg-[#0F172A] border border-white/10 p-5 rounded-xl shadow">
-          <p className="text-sm text-slate-400">Pace</p>
-          <h2 className="text-2xl font-semibold mt-1">
+        </Card>
+
+        <Card bgColor="bg-background" className="text-center">
+          <p className="text-sm text-foreground/50 font-bold uppercase tracking-widest">Pace</p>
+          <h2 className="text-2xl font-extrabold mt-2 text-foreground capitalize">
             {dashboard.pacePreference || "—"}
           </h2>
-        </div>
+        </Card>
       </div>
- 
+
       {/* Goal Section */}
-      <div className="bg-[#0F172A] border border-white/10 p-6 rounded-2xl shadow-lg">
-        <h2 className="text-lg font-semibold mb-4">Active Goal</h2>
- 
+      <Card bgColor="bg-background">
+        <h2 className="text-xl font-extrabold mb-6 uppercase tracking-tight">Active Goal</h2>
+
         {dashboard.activeGoal ? (
-          <p className="text-sky-400 font-medium mb-4">
+          <p className="text-primary font-bold text-2xl mb-6">
             {dashboard.activeGoal}
           </p>
         ) : (
-          <p className="text-slate-400 mb-4">No active goal</p>
+          <p className="text-foreground/60 mb-6 font-medium">No active goal</p>
         )}
- 
+
         {/* Active Step */}
         {dashboard.activeStep && (
-          <div className="bg-[#020617] border border-white/10 rounded-xl p-5 mb-6">
-            <h3 className="font-medium text-lg">
+          <div className="bg-muted rounded-lg p-6 mb-8 border-l-4 border-secondary">
+            <h3 className="font-extrabold text-xl mb-2 tracking-tight">
               {dashboard.activeStep.title}
             </h3>
-            <p className="text-sm text-slate-400 mt-1">
+            <p className="text-sm text-foreground/60 font-bold uppercase tracking-widest mb-2">
               Type: {dashboard.activeStep.type}
             </p>
-            {/* ✅ Guard: only render deadline if it's a valid date */}
-            {dashboard.activeStep.deadline &&
-              !isNaN(new Date(dashboard.activeStep.deadline)) && (
-                <p className="text-sm text-sky-400 mt-2">
-                  Deadline:{" "}
-                  {new Date(dashboard.activeStep.deadline).toLocaleDateString()}
-                </p>
-              )}
+            {dashboard.activeStep.deadline && !isNaN(new Date(dashboard.activeStep.deadline)) && (
+              <p className="text-sm text-secondary font-bold uppercase tracking-wide">
+                Deadline: {new Date(dashboard.activeStep.deadline).toLocaleDateString()}
+              </p>
+            )}
           </div>
         )}
- 
+
         {/* Current Action */}
         <div>
-          <h3 className="text-md font-semibold mb-3">Current Action</h3>
- 
+          <h3 className="text-xl font-extrabold mb-4 uppercase tracking-tight">Current Action</h3>
+
           {dashboard.currentAction ? (
-            <div className="bg-[#020617] border border-sky-500/30 rounded-xl p-5">
-              <p className="font-medium text-sky-400">
+            <div className="bg-primary/10 border-4 border-primary rounded-lg p-6">
+              <p className="font-extrabold text-primary text-lg">
                 {dashboard.currentAction.title}
               </p>
               {dashboard.currentAction.description && (
-                <p className="text-sm text-slate-400 mt-2">
+                <p className="text-sm text-foreground/80 mt-2 font-medium">
                   {dashboard.currentAction.description}
                 </p>
               )}
-              <p className="text-xs text-slate-500 mt-3">
+              <p className="text-xs text-foreground/50 mt-4 font-bold uppercase tracking-widest">
                 Step Action #{dashboard.currentAction.sequence}
               </p>
             </div>
           ) : (
-            <p className="text-slate-400">No pending actions</p>
+            <p className="text-foreground/50 font-medium">No pending actions</p>
           )}
         </div>
-      </div>
-    </>
+      </Card>
+    </div>
   );
 };
- 
-export default Home;
+
+export default Dashboard;

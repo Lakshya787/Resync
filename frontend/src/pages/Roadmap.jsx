@@ -18,72 +18,77 @@ export default function Roadmap() {
   }, []);
 
   return (
-    <div className="max-w-5xl mx-auto py-12 px-4">
-      <h2 className="text-3xl font-bold text-center mb-12">
+    <div className="max-w-4xl mx-auto py-12 px-6">
+      <h2 className="text-4xl font-extrabold text-primary text-center mb-16 uppercase tracking-tighter">
         Learning Roadmap
       </h2>
 
       <div className="relative">
 
-{/* road */}
-            <div className="absolute left-1/2 top-0 h-full w-16 bg-gray-700 -translate-x-1/2"></div>
-
-            {/* center dashed divider */}
-            <div
-            className="absolute left-1/2 top-0 h-full -translate-x-1/2"
-            style={{
-                width: "4px",
-                background:
-                "repeating-linear-gradient(to bottom, white 0px, white 25px, transparent 25px, transparent 60px)"
-            }}
-            ></div>
+        {/* Custom solid road line */}
+        <div className="absolute left-1/2 top-0 h-full w-2 bg-muted -translate-x-1/2 rounded-full overflow-hidden">
+          <div className="absolute top-0 w-full h-[10%] bg-primary animate-pulse" />
+        </div>
 
         {steps.map((step, index) => {
           const isLeft = index % 2 === 0;
 
-          let statusColor = "bg-gray-400";
-          if (step.status === "completed") statusColor = "bg-green-500";
-          if (step.status === "active") statusColor = "bg-yellow-500";
+          // Flat design status definitions
+          let statusColor = "bg-muted";
+          let badgeColor = "bg-foreground text-white";
+          if (step.status === "completed") {
+            statusColor = "bg-secondary";
+            badgeColor = "bg-secondary text-white";
+          }
+          if (step.status === "active") {
+            statusColor = "bg-accent";
+            badgeColor = "bg-accent text-white";
+          }
 
           return (
             <div
-              key={step.stepId}
+              key={step.stepId ?? index}
               className={`relative flex items-center mb-12 ${
                 isLeft ? "justify-start" : "justify-end"
               }`}
             >
-           {/* card */}
-            <div
-            className={`w-5/12 border rounded-lg shadow-md p-4
-            ${
-                step.status === "completed"
-                ? "bg-emerald-900/20 border-emerald-400"
-                : step.status === "active"
-                ? "bg-blue-900/30 border-blue-400"
-                : "bg-slate-900 border-blue-900"
-            }`}
-            >
-            <h3 className="font-semibold text-lg text-white">{step.title}</h3>
+              {/* card */}
+              <div
+                className={`w-5/12 p-6 rounded-lg transition-transform hover:-translate-y-1 ${
+                  step.status === "completed"
+                    ? "bg-secondary/10 border-4 border-secondary"
+                    : step.status === "active"
+                    ? "bg-accent/10 border-4 border-accent"
+                    : "bg-background border-4 border-muted"
+                }`}
+              >
+                <div className="flex justify-between items-start mb-2 gap-4">
+                  <h3 className="font-extrabold text-xl text-foreground capitalize">{step.title}</h3>
+                  <span className={`px-2 py-1 text-[10px] font-bold uppercase tracking-widest rounded-md ${badgeColor}`}>
+                    {step.status}
+                  </span>
+                </div>
 
-            <p className="text-sm text-blue-200 mt-1">
-                {step.description}
-            </p>
+                <p className="text-sm text-foreground/80 font-medium mb-4">
+                  {step.description}
+                </p>
 
-            <div className="text-xs text-blue-300 mt-2">
-                Type: {step.type}
-            </div>
+                <div className="text-xs font-bold text-foreground/50 uppercase tracking-widest">
+                  Type: {step.type}
+                </div>
 
- {step.completedAt && (
-  <div className="text-xs mt-1 text-emerald-400">
-    Completed: {new Date(step.completedAt).toLocaleDateString("en-IN", {
-      timeZone: "UTC"
-    })}
-  </div>
-)}
-            </div>
+                {step.completedAt && (
+                  <div className="text-xs mt-3 font-bold text-secondary uppercase tracking-wider">
+                    Completed: {new Date(step.completedAt).toLocaleDateString("en-IN", {
+                      timeZone: "UTC"
+                    })}
+                  </div>
+                )}
+              </div>
+
               {/* dot */}
               <div
-                className={`absolute left-1/2 w-5 h-5 rounded-full ${statusColor} transform -translate-x-1/2`}
+                className={`absolute left-1/2 w-8 h-8 rounded-full border-4 border-background ${statusColor} transform -translate-x-1/2 shadow-none z-10`}
               ></div>
             </div>
           );

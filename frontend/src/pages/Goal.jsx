@@ -1,23 +1,23 @@
 import { useCallback, useEffect, useState } from "react";
 import api from "../Api";
+import Card from "../components/Card";
+import Button from "../components/Button";
+import Input from "../components/Input";
  
 export default function Goal() {
   const [goals, setGoals]           = useState([]);
   const [activeGoal, setActiveGoal] = useState(null);
   const [loading, setLoading]       = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
-  const [error, setError]           = useState(null);   // ✅ replaces alert()
+  const [error, setError]           = useState(null);
  
-  // ── Form state ──────────────────────────────────────────────────────────────
   const [name, setName]             = useState("");
   const [category, setCategory]     = useState("");
   const [description, setDescription] = useState("");
   const [pace, setPace]             = useState("medium");
  
-  // ✅ Per-goal pace state — fixes shared `pace` bug (see below)
   const [goalPaces, setGoalPaces]   = useState({});
  
-  // ── Fetch ───────────────────────────────────────────────────────────────────
   const fetchData = useCallback(async () => {
     setError(null);
     try {
@@ -38,11 +38,8 @@ export default function Goal() {
     fetchData();
   }, [fetchData]);
  
-  // ── Create ──────────────────────────────────────────────────────────────────
   const createGoal = async () => {
     setError(null);
- 
-    // ✅ Inline validation — no alert()
     if (!name.trim()) {
       setError("Goal name is required.");
       return;
@@ -54,7 +51,6 @@ export default function Goal() {
  
     try {
       setActionLoading(true);
- 
       await api.post("/goal/create", {
         name: name.trim(),
         category,
@@ -75,10 +71,8 @@ export default function Goal() {
     }
   };
  
-  // ── Activate ─────────────────────────────────────────────────────────────────
   const activateGoal = async (goalId) => {
     setError(null);
-    // ✅ Use per-goal pace, fall back to "medium"
     const selectedPace = goalPaces[goalId] || "medium";
     try {
       setActionLoading(true);
@@ -91,7 +85,6 @@ export default function Goal() {
     }
   };
  
-  // ── Pause ────────────────────────────────────────────────────────────────────
   const pauseGoal = async () => {
     setError(null);
     try {
@@ -105,9 +98,7 @@ export default function Goal() {
     }
   };
  
-  // ── Delete ───────────────────────────────────────────────────────────────────
   const deleteGoal = async (goalId) => {
-    // ✅ window.confirm is acceptable for destructive actions — kept intentionally
     if (!window.confirm("Are you sure you want to delete this goal?")) return;
     setError(null);
     try {
@@ -121,64 +112,59 @@ export default function Goal() {
     }
   };
  
-  // ── Render ───────────────────────────────────────────────────────────────────
   if (loading) {
-    return <div className="text-slate-400 animate-pulse">Loading goals…</div>;
+    return <div className="text-foreground/50 font-bold uppercase tracking-widest animate-pulse">Loading goals…</div>;
   }
  
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
  
-      {/* ✅ Centralised error banner */}
       {error && (
-        <div className="rounded-xl bg-red-500/10 border border-red-500/30 px-4 py-3 text-sm text-red-400">
+        <div className="rounded-md bg-error text-white font-bold px-4 py-4 uppercase tracking-wide text-sm">
           {error}
         </div>
       )}
  
       {/* ACTIVE GOAL */}
-      <div className="bg-[#0F172A] border border-white/10 p-6 rounded-2xl">
-        <h2 className="text-lg font-semibold mb-2">Active Goal</h2>
+      <Card bgColor="bg-background">
+        <h2 className="text-xl font-extrabold mb-4 uppercase tracking-tight text-primary">Active Goal</h2>
  
         {activeGoal ? (
           <>
-            <h3 className="text-xl font-medium">{activeGoal.goal.name}</h3>
-            <p className="text-sm text-slate-400 mt-1">
+            <h3 className="text-3xl font-extrabold mb-2">{activeGoal.goal.name}</h3>
+            <p className="text-sm font-bold text-foreground/60 uppercase tracking-widest mb-6">
               Category: {activeGoal.goal.category} · Pace: {activeGoal.pacePreference}
             </p>
-            <button
+            <Button
               onClick={pauseGoal}
               disabled={actionLoading}
-              className="mt-4 bg-yellow-500 px-4 py-2 rounded-xl text-sm
-                         disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+              variant="outline"
+              className="border-accent text-accent hover:bg-accent hover:text-white"
             >
-              {actionLoading ? "Pausing…" : "Pause Goal"}
-            </button>
+              {actionLoading ? "PAUSING…" : "PAUSE GOAL"}
+            </Button>
           </>
         ) : (
-          <p className="text-slate-400">No active goal selected</p>
+          <p className="text-foreground/60 font-medium">No active goal selected</p>
         )}
-      </div>
+      </Card>
  
       {/* CREATE GOAL */}
       {goals.length < 2 && (
-        <div className="bg-[#0F172A] border border-white/10 p-6 rounded-2xl">
-          <h2 className="text-lg font-semibold mb-4">Create New Goal</h2>
+        <Card bgColor="bg-background">
+          <h2 className="text-xl font-extrabold mb-6 uppercase tracking-tight">Create New Goal</h2>
  
-          <div className="space-y-3">
-            <input
+          <div className="space-y-4">
+            <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Goal name"
-              className="w-full p-2 rounded bg-[#020617] text-softwhite
-                         border border-white/10 focus:outline-none focus:border-sky-500"
             />
  
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="w-full p-2 rounded bg-[#020617] text-softwhite
-                         border border-white/10 focus:outline-none focus:border-sky-500"
+              className="w-full h-14 px-4 bg-muted text-foreground rounded-md focus:border-2 focus:border-primary outline-none"
             >
               <option value="">Select category</option>
               <option value="skill">Skill</option>
@@ -190,39 +176,36 @@ export default function Goal() {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Description (optional)"
-              className="w-full p-2 rounded bg-[#020617] text-softwhite
-                         border border-white/10 focus:outline-none focus:border-sky-500"
+              className="w-full p-4 rounded-md bg-muted text-foreground focus:border-2 focus:border-primary outline-none resize-none h-32"
             />
  
             <select
               value={pace}
               onChange={(e) => setPace(e.target.value)}
-              className="w-full p-2 rounded bg-[#020617] text-softwhite
-                         border border-white/10 focus:outline-none focus:border-sky-500"
+              className="w-full h-14 px-4 bg-muted text-foreground rounded-md focus:border-2 focus:border-primary outline-none"
             >
               <option value="slow">Slow Pace</option>
               <option value="medium">Medium Pace</option>
               <option value="fast">Fast Pace</option>
             </select>
  
-            <button
+            <Button
               onClick={createGoal}
               disabled={actionLoading}
-              className="bg-sky-500 text-black px-4 py-2 rounded-xl font-medium
-                         disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+              variant="primary"
             >
-              {actionLoading ? "Creating…" : "Create Goal"}
-            </button>
+              {actionLoading ? "CREATING…" : "CREATE GOAL"}
+            </Button>
           </div>
-        </div>
+        </Card>
       )}
  
       {/* GOALS LIST */}
-      <div className="bg-[#0F172A] border border-white/10 p-6 rounded-2xl">
-        <h2 className="text-lg font-semibold mb-4">Your Goals</h2>
+      <Card bgColor="bg-background">
+        <h2 className="text-xl font-extrabold mb-6 uppercase tracking-tight">Your Goals</h2>
  
         {goals.length === 0 && (
-          <p className="text-slate-400">No goals yet. Create one above.</p>
+          <p className="text-foreground/50 font-medium">No goals yet. Create one above.</p>
         )}
  
         <div className="space-y-4">
@@ -232,26 +215,24 @@ export default function Goal() {
             return (
               <div
                 key={goal._id}
-                className={`p-4 rounded-xl flex justify-between items-center
-                  ${isActive
-                    ? "border border-sky-500 bg-sky-500/5"
-                    : "bg-[#020617]"
-                  }`}
+                className={`p-6 rounded-lg flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all ${
+                  isActive
+                    ? "border-4 border-primary bg-primary/5"
+                    : "bg-muted"
+                }`}
               >
                 <div>
-                  <h3 className="font-medium">{goal.name}</h3>
-                  <p className="text-xs text-slate-400">{goal.category}</p>
-                  {/* ✅ Show active badge */}
+                  <h3 className="font-extrabold text-xl">{goal.name}</h3>
+                  <p className="text-sm font-bold text-foreground/60 uppercase tracking-widest mt-1">{goal.category}</p>
                   {isActive && (
-                    <span className="text-xs text-sky-400 mt-1 inline-block">
-                      ● Active
+                    <span className="text-sm font-bold text-primary mt-2 inline-block uppercase tracking-wider">
+                      ● ACTIVE
                     </span>
                   )}
                 </div>
  
                 {!isActive && (
-                  <div className="flex items-center gap-2">
-                    {/* ✅ Per-goal pace — no longer shares state with the create form */}
+                  <div className="flex items-center gap-3">
                     <select
                       value={goalPaces[goal._id] || "medium"}
                       onChange={(e) =>
@@ -260,38 +241,35 @@ export default function Goal() {
                           [goal._id]: e.target.value,
                         }))
                       }
-                      className="bg-[#0F172A] border border-white/10 px-2 py-1 rounded text-sm
-                                 focus:outline-none focus:border-sky-500"
+                      className="h-14 bg-background border-2 border-border px-4 rounded-md font-bold focus:outline-none focus:border-primary"
                     >
                       <option value="slow">Slow</option>
                       <option value="medium">Medium</option>
                       <option value="fast">Fast</option>
                     </select>
  
-                    <button
+                    <Button
                       onClick={() => activateGoal(goal._id)}
                       disabled={actionLoading}
-                      className="bg-sky-500 text-black px-3 py-1 rounded-xl text-sm
-                                 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+                      variant="primary"
                     >
-                      {actionLoading ? "…" : "Activate"}
-                    </button>
+                      {actionLoading ? "…" : "ACTIVATE"}
+                    </Button>
  
-                    <button
+                    <Button
                       onClick={() => deleteGoal(goal._id)}
                       disabled={actionLoading}
-                      className="bg-red-500 px-3 py-1 rounded-xl text-sm
-                                 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+                      variant="danger"
                     >
-                      Delete
-                    </button>
+                      DELETE
+                    </Button>
                   </div>
                 )}
               </div>
             );
           })}
         </div>
-      </div>
+      </Card>
  
     </div>
   );

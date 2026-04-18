@@ -24,12 +24,11 @@ export default function DashboardLayout() {
   }, []);
 
   return (
-    <div className="flex h-screen bg-[#020617] text-slate-200">
+    <div className="flex h-screen bg-background text-foreground">
       <Sidebar />
 
       <div className="flex flex-col flex-1 overflow-hidden">
-        <main className="flex-1 overflow-y-auto p-8 space-y-8">
-
+        <main className="flex-1 overflow-y-auto p-8 space-y-8 bg-muted/50 rounded-tl-3xl border-t-2 border-l-2 border-border">
           {/* Global User Status */}
           <div className="flex justify-end">
             {dashboard && <UserStatus user={dashboard} />}

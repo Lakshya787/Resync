@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import api from "../Api";
+import Card from "../components/Card";
+import Button from "../components/Button";
 
-// Pure utility — defined outside to avoid re-creation on every render
 const formatTime = (sec) => {
   const m = Math.floor(sec / 60);
   const s = sec % 60;
@@ -14,12 +15,10 @@ export default function Action() {
   const [running, setRunning]         = useState(false);
   const [seconds, setSeconds]         = useState(0);
   const [actionLoading, setActionLoading] = useState(false);
-  const [error, setError]             = useState(null);   // ✅ No more alert()
+  const [error, setError]             = useState(null);
 
-  // Keep a stable ref to the interval so we never leave a ghost timer
   const intervalRef = useRef(null);
 
-  // ─── Timer ────────────────────────────────────────────────────────────────
   const startTimer = useCallback((initialSeconds = 0) => {
     setSeconds(initialSeconds);
     clearInterval(intervalRef.current);
@@ -35,10 +34,8 @@ export default function Action() {
     setSeconds(0);
   }, []);
 
-  // Clear interval on unmount to prevent memory leaks
   useEffect(() => () => clearInterval(intervalRef.current), []);
 
-  // ─── Fetch ─────────────────────────────────────────────────────────────────
   const fetchAction = useCallback(async () => {
     setError(null);
     try {
@@ -46,8 +43,6 @@ export default function Action() {
       const data = res.data.data;
       setAction(data);
 
-      // ✅ BUG FIX: Resume timer if the server says a session is already running.
-      // Assumes the API returns `activeSessionStartedAt` (ISO string) when live.
       if (data?.activeSessionStartedAt) {
         const elapsed = Math.floor(
           (Date.now() - new Date(data.activeSessionStartedAt).getTime()) / 1000
@@ -65,9 +60,8 @@ export default function Action() {
     fetchAction();
   }, [fetchAction]);
 
-  // ─── Start ─────────────────────────────────────────────────────────────────
   const startSession = useCallback(async () => {
-    if (running || actionLoading) return;   // guard against double-tap
+    if (running || actionLoading) return;
     setError(null);
     try {
       setActionLoading(true);
@@ -80,9 +74,8 @@ export default function Action() {
     }
   }, [action, running, actionLoading, startTimer]);
 
-  // ─── Stop ──────────────────────────────────────────────────────────────────
   const stopSession = useCallback(async () => {
-    if (!running || actionLoading) return;  // guard
+    if (!running || actionLoading) return;
     setError(null);
     try {
       setActionLoading(true);
@@ -96,14 +89,12 @@ export default function Action() {
     }
   }, [action, running, actionLoading, stopTimer, fetchAction]);
 
-  // ─── Complete ──────────────────────────────────────────────────────────────
   const completeAction = useCallback(async () => {
     if (actionLoading) return;
     setError(null);
     try {
       setActionLoading(true);
 
-      // ✅ BUG FIX: Stop running session before completing to avoid dangling sessions
       if (running) {
         await api.post("/actions/stop-session", { actionId: action._id });
         stopTimer();
@@ -118,43 +109,45 @@ export default function Action() {
     }
   }, [action, running, actionLoading, stopTimer, fetchAction]);
 
-  // ─── Render ────────────────────────────────────────────────────────────────
   if (loading) {
-    return (
-      <div className="text-slate-400 animate-pulse">Loading action…</div>
-    );
+    return <div className="text-foreground/50 font-bold uppercase tracking-widest animate-pulse">Loading action…</div>;
   }
 
   return (
-    <div className="space-y-6">
-      <div className="bg-[#0F172A] border border-white/10 p-6 rounded-2xl">
-        <h2 className="text-lg font-semibold mb-4">Current Action</h2>
+    <div className="space-y-8">
+      <Card bgColor="bg-background">
+        <h2 className="text-xl font-extrabold mb-6 uppercase tracking-tight">Current Action</h2>
 
-        {/* ✅ Inline error banner instead of alert() */}
         {error && (
-          <div className="mb-4 rounded-xl bg-red-500/10 border border-red-500/30 px-4 py-3 text-sm text-red-400">
-            {error}
+          <div className="mb-6 rounded-md bg-error text-white font-bold px-4 py-4 uppercase tracking-wide text-sm flex justify-between items-center">
+            <span>{error}</span>
+            <button
+              onClick={fetchAction}
+              className="ml-4 underline hover:text-white/80"
+            >
+              RETRY
+            </button>
           </div>
         )}
 
         {!action && !error && (
-          <p className="text-slate-400">No pending action for current step</p>
+          <p className="text-foreground/60 font-medium">No pending action for current step</p>
         )}
 
         {action && (
           <>
-            <h3 className="text-xl font-medium">{action.title}</h3>
+            <h3 className="text-3xl font-extrabold mt-4 text-primary uppercase tracking-tight">{action.title}</h3>
 
-            <p className="text-sm text-slate-400 mt-2">{action.description}</p>
+            <p className="text-lg text-foreground/80 mt-4 font-medium">{action.description}</p>
 
-            <div className="mt-2 flex gap-4 text-xs text-slate-500">
-              <span>Required: {action.minRequiredMinutes} min</span>
-              <span>Tracked: {action.totalTrackedMinutes} min</span>
+            <div className="mt-6 flex gap-6 text-sm font-bold uppercase tracking-widest text-foreground/50">
+              <span>Required: <span className="text-secondary">{action.minRequiredMinutes} min</span></span>
+              <span>Tracked: <span className="text-accent">{action.totalTrackedMinutes} min</span></span>
             </div>
 
             {/* Timer */}
             <div
-              className="mt-4 text-3xl font-mono tabular-nums"
+              className={`mt-8 text-7xl font-extrabold tabular-nums tracking-tighter ${running ? "text-primary scale-105" : "text-foreground"} transition-all duration-300 origin-left`}
               aria-live="polite"
               aria-label={`Timer: ${formatTime(seconds)}`}
             >
@@ -162,39 +155,39 @@ export default function Action() {
             </div>
 
             {/* Controls */}
-            <div className="flex gap-3 mt-4">
+            <div className="flex gap-4 mt-12 flex-wrap">
               {!running ? (
-                <button
+                <Button
                   onClick={startSession}
                   disabled={actionLoading}
-                  className="bg-green-500 px-4 py-2 rounded-xl text-black font-medium
-                             disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+                  variant="primary"
+                  className="bg-secondary text-white hover:bg-green-600"
                 >
-                  {actionLoading ? "Starting…" : "Start"}
-                </button>
+                  {actionLoading ? "STARTING…" : "START TIMER"}
+                </Button>
               ) : (
-                <button
+                <Button
                   onClick={stopSession}
                   disabled={actionLoading}
-                  className="bg-yellow-400 px-4 py-2 rounded-xl text-black font-medium
-                             disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+                  variant="primary"
+                  className="bg-accent text-white hover:bg-yellow-600"
                 >
-                  {actionLoading ? "Stopping…" : "Stop"}
-                </button>
+                  {actionLoading ? "STOPPING…" : "PAUSE TIMER"}
+                </Button>
               )}
 
-              <button
+              <Button
                 onClick={completeAction}
                 disabled={actionLoading}
-                className="bg-sky-500 text-black px-4 py-2 rounded-xl font-medium
-                           disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+                variant="outline"
+                className="hover:bg-primary border-primary text-primary"
               >
-                {actionLoading ? "Completing…" : "Complete"}
-              </button>
+                {actionLoading ? "COMPLETING…" : "COMPLETE ACTION"}
+              </Button>
             </div>
           </>
         )}
-      </div>
+      </Card>
     </div>
   );
 }
