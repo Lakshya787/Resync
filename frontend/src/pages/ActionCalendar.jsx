@@ -26,9 +26,10 @@ const ActionCalendar = () => {
       const grouped = {};
 
       actions.forEach((action) => {
-        const date = new Date(
+        const d = new Date(
           action.completedAt || action.startedAt || action.updatedAt
-        ).toLocaleDateString("en-CA");
+        );
+        const date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
         if (!grouped[date]) grouped[date] = [];
         grouped[date].push(action);
       });
@@ -64,8 +65,7 @@ const ActionCalendar = () => {
   }
 
   for (let i = 1; i <= daysInMonth; i++) {
-    const dateObj = new Date(year, month, i);
-    const dateStr = dateObj.toISOString().split("T")[0];
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
 
     days.push(
       <CalendarDay

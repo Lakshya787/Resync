@@ -16,7 +16,7 @@ const ActionTooltip = ({ tooltip }) => {
       className="bg-background border-4 border-foreground rounded-none p-4 w-64 z-[9999] shadow-none"
     >
       <h3 className="font-extrabold uppercase tracking-tight text-base mb-2 border-b-2 border-foreground pb-2">
-        {new Date(date).toDateString()}
+        {new Date(date.replace(/-/g, '/')).toDateString()}
       </h3>
 
       {actions.length === 0 ? (
