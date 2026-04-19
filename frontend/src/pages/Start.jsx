@@ -57,7 +57,7 @@ export default function Landing() {
                   </Button>
                 </Link>
                 <Link to="/login">
-                  <Button variant="outline" className="text-white border-white hover:bg-white hover:text-primary text-lg h-16 w-32 border-4">
+                  <Button variant="outline" className="text-white border-white hover:bg-blue-300 hover:text-primary text-lg h-16 w-32 border-4">
                     LOGIN
                   </Button>
                 </Link>
