@@ -310,9 +310,9 @@ OUTPUT FORMAT
 }
 `;
 
-    // Fetch recommendation resources in parallel with step generation (with 8s timeout to prevent hanging)
+    // Fetch recommendation resources in parallel with step generation (with 25s timeout to prevent hanging)
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 25000); // 25 second timeout
 
     const recommendPromise = fetch("https://resync-zq7l.onrender.com/recommend", {
       method: "POST",
