@@ -310,7 +310,26 @@ OUTPUT FORMAT
 }
 `;
 
-    const aiRaw = await generateAI(firstStepPrompt);
+    // Fetch recommendation resources in parallel with step generation
+    const recommendPromise = fetch("https://resync-zq7l.onrender.com/recommend", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        goal: name,
+        user_id: userId.toString(),
+        max_videos: 5
+      })
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .catch((err) => {
+        console.error("Recommendation API failed:", err.message);
+        return null;
+      });
+
+    const [aiRaw, recommendations] = await Promise.all([
+      generateAI(firstStepPrompt),
+      recommendPromise
+    ]);
 
     let parsed;
 
@@ -384,7 +403,9 @@ OUTPUT FORMAT
               title: firstAction.title,
               estimatedMinutes: firstAction.estimatedMinutes
             }
-          : null
+          : null,
+        resources: recommendations?.videos || [],
+        roadmapId: recommendations?.session_id || null
       }
     });
 

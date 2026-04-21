@@ -17,6 +17,7 @@ export default function Goal() {
   const [pace, setPace]             = useState("medium");
  
   const [goalPaces, setGoalPaces]   = useState({});
+  const [recommendedVideos, setRecommendedVideos] = useState([]);
  
   const fetchData = useCallback(async () => {
     setError(null);
@@ -51,12 +52,16 @@ export default function Goal() {
  
     try {
       setActionLoading(true);
-      await api.post("/goal/create", {
+      const res = await api.post("/goal/create", {
         name: name.trim(),
         category,
         description,
         pacePreference: pace,
       });
+ 
+      if (res.data?.data?.resources?.length > 0) {
+        setRecommendedVideos(res.data.data.resources);
+      }
  
       setName("");
       setCategory("");
@@ -148,6 +153,58 @@ export default function Goal() {
           <p className="text-foreground/60 font-medium">No active goal selected</p>
         )}
       </Card>
+ 
+      {/* RECOMMENDED VIDEOS */}
+      {recommendedVideos.length > 0 && (
+        <Card bgColor="bg-background">
+          <h2 className="text-xl font-extrabold mb-2 uppercase tracking-tight text-primary">Recommended Resources</h2>
+          <p className="text-sm font-medium text-foreground/60 mb-6">We found these videos based on your newly created goal.</p>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {recommendedVideos.map((video, idx) => (
+              <a
+                key={idx}
+                href={video.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block p-4 border-2 border-border rounded-lg hover:border-primary transition-colors bg-muted"
+              >
+                <div className="flex flex-col h-full justify-between gap-3">
+                  <div>
+                    <h3 className="font-bold text-lg leading-tight">{video.title}</h3>
+                    <p className="text-sm text-foreground/70 mt-2 line-clamp-2">{video.description}</p>
+                  </div>
+                  <div className="flex flex-wrap gap-2 mt-auto pt-2">
+                    {video.channel && (
+                      <span className="text-xs font-bold uppercase py-1 px-2 border border-border bg-background rounded-full">
+                        {video.channel}
+                      </span>
+                    )}
+                    {video.duration && (
+                      <span className="text-xs font-bold uppercase py-1 px-2 border border-border rounded-full">
+                        {video.duration}
+                      </span>
+                    )}
+                    {video.difficulty_level && (
+                      <span className="text-xs font-bold uppercase py-1 px-2 bg-primary/10 text-primary rounded-full">
+                        {video.difficulty_level}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </a>
+            ))}
+          </div>
+          
+          <Button 
+            variant="outline" 
+            className="mt-6 w-full md:w-auto" 
+            onClick={() => setRecommendedVideos([])}
+          >
+            DISMISS
+          </Button>
+        </Card>
+      )}
  
       {/* CREATE GOAL */}
       {goals.length < 2 && (

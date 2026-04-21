@@ -1,0 +1,374 @@
+link=https://resync-zq7l.onrender.com/
+Resync AI
+ 1.0.0 
+OAS 3.1
+/openapi.json
+Agentic learning assistant — YouTube discovery + LLM roadmaps
+
+default
+
+
+POST
+/recommend
+Recommend Api
+
+Main recommendation endpoint — search, rank, and generate roadmap.
+
+Parameters
+Try it out
+No parameters
+
+Request body
+
+application/json
+Example Value
+Schema
+{
+  "goal": "string",
+  "user_id": "string",
+  "max_videos": 5
+}
+Responses
+Code	Description	Links
+200	
+Successful Response
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+{
+  "videos": [
+    {
+      "title": "string",
+      "url": "string",
+      "description": "",
+      "reason": "",
+      "key_concepts": [
+        "string"
+      ],
+      "difficulty_level": "beginner",
+      "channel": "",
+      "duration": ""
+    }
+  ],
+  "roadmap": [
+    {
+      "step_number": 0,
+      "title": "string",
+      "description": "string",
+      "difficulty": "beginner",
+      "concepts": [
+        "string"
+      ],
+      "video_urls": [
+        "string"
+      ]
+    }
+  ],
+  "session_id": "",
+  "goal": ""
+}
+No links
+422	
+Validation Error
+
+Media type
+
+application/json
+Example Value
+Schema
+{
+  "detail": [
+    {
+      "loc": [
+        "string",
+        0
+      ],
+      "msg": "string",
+      "type": "string",
+      "input": "string",
+      "ctx": {}
+    }
+  ]
+}
+No links
+
+POST
+/next-step
+Next Step Api
+
+Get the next step in the learning roadmap after completing steps.
+
+Parameters
+Try it out
+No parameters
+
+Request body
+
+application/json
+Example Value
+Schema
+{
+  "user_id": "string",
+  "completed_steps": [
+    "string"
+  ]
+}
+Responses
+Code	Description	Links
+200	
+Successful Response
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+{
+  "next_videos": [
+    {
+      "title": "string",
+      "url": "string",
+      "description": "",
+      "reason": "",
+      "key_concepts": [
+        "string"
+      ],
+      "difficulty_level": "beginner",
+      "channel": "",
+      "duration": ""
+    }
+  ],
+  "next_step": {
+    "step_number": 0,
+    "title": "string",
+    "description": "string",
+    "difficulty": "beginner",
+    "concepts": [
+      "string"
+    ],
+    "video_urls": [
+      "string"
+    ]
+  },
+  "progress": "0%",
+  "remaining_steps": 0
+}
+No links
+422	
+Validation Error
+
+Media type
+
+application/json
+Example Value
+Schema
+{
+  "detail": [
+    {
+      "loc": [
+        "string",
+        0
+      ],
+      "msg": "string",
+      "type": "string",
+      "input": "string",
+      "ctx": {}
+    }
+  ]
+}
+No links
+
+GET
+/health
+Health
+
+Parameters
+Try it out
+No parameters
+
+Responses
+Code	Description	Links
+200	
+Successful Response
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+"string"
+No links
+
+GET
+/
+Home
+
+Parameters
+Try it out
+No parameters
+
+Responses
+Code	Description	Links
+200	
+Successful Response
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+"string"
+No links
+
+Schemas
+HTTPValidationErrorCollapse allobject
+detailCollapse allarray<object>
+ItemsCollapse allobject
+locCollapse allarray<(string | integer)>
+ItemsCollapse all(string | integer)
+Any ofCollapse all(string | integer)
+#0string
+#1integer
+msgstring
+typestring
+inputany
+ctxobject
+NextStepRequestCollapse allobject
+Request body for POST /next-step
+
+user_idCollapse allstring
+Session ID from previous /recommend call
+
+completed_stepsCollapse allarray<string>
+Steps the user has completed
+
+Itemsstring
+NextStepResponseCollapse allobject
+Response from POST /next-step
+
+next_videosCollapse allarray<object>
+ItemsCollapse allobject
+A single recommended video
+
+titlestring
+urlstring
+descriptionCollapse allstring
+Default""
+reasonCollapse allstring
+Default""
+key_conceptsCollapse allarray<string>
+Itemsstring
+difficulty_levelCollapse allstring
+Default"beginner"
+channelCollapse allstring
+Default""
+durationCollapse allstring
+Default""
+next_stepCollapse all(object | null)
+Any ofCollapse all(object | null)
+#0 RoadmapStepExpand allobject
+#1null
+progressCollapse allstring
+Default"0%"
+remaining_stepsCollapse allinteger
+Default0
+RecommendRequestCollapse allobject
+Request body for POST /recommend
+
+goalCollapse allstring[3, 500] characters
+The learning goal
+
+user_idCollapse all(string | null)
+Optional user/session ID for context
+
+Any ofCollapse all(string | null)
+#0string
+#1null
+max_videosCollapse allinteger[1, 10]
+Max videos to return
+
+Default5
+RecommendResponseCollapse allobject
+Response from POST /recommend
+
+videosCollapse allarray<object>
+ItemsCollapse allobject
+A single recommended video
+
+titlestring
+urlstring
+descriptionCollapse allstring
+Default""
+reasonCollapse allstring
+Default""
+key_conceptsCollapse allarray<string>
+Itemsstring
+difficulty_levelCollapse allstring
+Default"beginner"
+channelCollapse allstring
+Default""
+durationCollapse allstring
+Default""
+roadmapCollapse allarray<object>
+ItemsCollapse allobject
+A single step in the learning roadmap
+
+step_numberinteger
+titlestring
+descriptionstring
+difficultyCollapse allstring
+Default"beginner"
+conceptsCollapse allarray<string>
+Itemsstring
+video_urlsCollapse allarray<string>
+Itemsstring
+session_idCollapse allstring
+Default""
+goalCollapse allstring
+Default""
+RoadmapStepCollapse allobject
+A single step in the learning roadmap
+
+step_numberinteger
+titlestring
+descriptionstring
+difficultyCollapse allstring
+Default"beginner"
+conceptsCollapse allarray<string>
+Itemsstring
+video_urlsCollapse allarray<string>
+Itemsstring
+ValidationErrorCollapse allobject
+locCollapse allarray<(string | integer)>
+ItemsCollapse all(string | integer)
+Any ofCollapse all(string | integer)
+#0string
+#1integer
+msgstring
+typestring
+inputany
+ctxobject
+VideoResultCollapse allobject
+A single recommended video
+
+titlestring
+urlstring
+descriptionCollapse allstring
+Default""
+reasonCollapse allstring
+Default""
+key_conceptsCollapse allarray<string>
+Itemsstring
+difficulty_levelCollapse allstring
+Default"beginner"
+channelCollapse allstring
+Default""
+durationCollapse allstring
+Default""
