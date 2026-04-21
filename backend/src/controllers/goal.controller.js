@@ -310,7 +310,10 @@ OUTPUT FORMAT
 }
 `;
 
-    // Fetch recommendation resources in parallel with step generation
+    // Fetch recommendation resources in parallel with step generation (with 8s timeout to prevent hanging)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
     const recommendPromise = fetch("https://resync-zq7l.onrender.com/recommend", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -318,12 +321,17 @@ OUTPUT FORMAT
         goal: name,
         user_id: userId.toString(),
         max_videos: 5
-      })
+      }),
+      signal: controller.signal
     })
-      .then((res) => (res.ok ? res.json() : null))
+      .then((res) => {
+        clearTimeout(timeoutId);
+        return res.ok ? res.json() : null;
+      })
       .catch((err) => {
-        console.error("Recommendation API failed:", err.message);
-        return null;
+        clearTimeout(timeoutId);
+        console.error("Recommendation API failed or timed out:", err.message);
+        return null; // Resolve with null so Promise.all doesn't break
       });
 
     const [aiRaw, recommendations] = await Promise.all([
@@ -340,6 +348,13 @@ OUTPUT FORMAT
         success: false,
         message: "AI returned invalid JSON"
       });
+    }
+
+    if (recommendations) {
+      newGoal.resources = recommendations.videos || [];
+      newGoal.roadmap = recommendations.roadmap || [];
+      newGoal.roadmapId = recommendations.session_id || null;
+      await newGoal.save();
     }
 
     const { title, description: stepDesc, type, timeInHours } = parsed;

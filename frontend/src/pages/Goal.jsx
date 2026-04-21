@@ -17,7 +17,6 @@ export default function Goal() {
   const [pace, setPace]             = useState("medium");
  
   const [goalPaces, setGoalPaces]   = useState({});
-  const [recommendedVideos, setRecommendedVideos] = useState([]);
  
   const fetchData = useCallback(async () => {
     setError(null);
@@ -52,16 +51,12 @@ export default function Goal() {
  
     try {
       setActionLoading(true);
-      const res = await api.post("/goal/create", {
+      await api.post("/goal/create", {
         name: name.trim(),
         category,
         description,
         pacePreference: pace,
       });
- 
-      if (res.data?.data?.resources?.length > 0) {
-        setRecommendedVideos(res.data.data.resources);
-      }
  
       setName("");
       setCategory("");
@@ -155,13 +150,13 @@ export default function Goal() {
       </Card>
  
       {/* RECOMMENDED VIDEOS */}
-      {recommendedVideos.length > 0 && (
+      {activeGoal?.goal?.resources && activeGoal.goal.resources.length > 0 && (
         <Card bgColor="bg-background">
           <h2 className="text-xl font-extrabold mb-2 uppercase tracking-tight text-primary">Recommended Resources</h2>
-          <p className="text-sm font-medium text-foreground/60 mb-6">We found these videos based on your newly created goal.</p>
+          <p className="text-sm font-medium text-foreground/60 mb-6">Expert-selected learning materials to help you with your active goal.</p>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {recommendedVideos.map((video, idx) => (
+            {activeGoal.goal.resources.map((video, idx) => (
               <a
                 key={idx}
                 href={video.url}
@@ -195,17 +190,43 @@ export default function Goal() {
               </a>
             ))}
           </div>
-          
-          <Button 
-            variant="outline" 
-            className="mt-6 w-full md:w-auto" 
-            onClick={() => setRecommendedVideos([])}
-          >
-            DISMISS
-          </Button>
         </Card>
       )}
  
+      {/* RECOMMENDED ROADMAP */}
+      {activeGoal?.goal?.roadmap && activeGoal.goal.roadmap.length > 0 && (
+        <Card bgColor="bg-background">
+          <h2 className="text-xl font-extrabold mb-2 uppercase tracking-tight text-primary">Recommended Roadmap</h2>
+          <p className="text-sm font-medium text-foreground/60 mb-6">A step-by-step learning path generated specifically for your goal.</p>
+          
+          <div className="space-y-4">
+            {activeGoal.goal.roadmap.map((step, idx) => (
+              <div key={idx} className="p-4 border-2 border-border rounded-lg bg-muted flex flex-col md:flex-row gap-4">
+                <div className="flex-shrink-0 w-12 h-12 bg-primary/20 text-primary font-black text-xl rounded-full flex items-center justify-center">
+                  {step.step_number || idx + 1}
+                </div>
+                <div className="flex-grow">
+                  <h3 className="font-extrabold text-lg">{step.title}</h3>
+                  <p className="text-foreground/70 text-sm mt-1 mb-3">{step.description}</p>
+                  
+                  <div className="flex flex-wrap gap-2 text-xs font-bold uppercase tracking-wide">
+                    {step.difficulty && (
+                      <span className="py-1 px-2 border-2 border-primary text-primary rounded-md">
+                        {step.difficulty}
+                      </span>
+                    )}
+                    {step.concepts && step.concepts.map((concept, cIdx) => (
+                      <span key={cIdx} className="py-1 px-2 border-2 border-border bg-background rounded-md">
+                        {concept}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )} 
       {/* CREATE GOAL */}
       {goals.length < 2 && (
         <Card bgColor="bg-background">
