@@ -124,11 +124,12 @@ export const login = async (req, res) => {
     user.lastLogin = new Date();
     await user.save();
 
-    generateTokenAndSetCookie(res, user._id);
+    const token = generateTokenAndSetCookie(res, user._id);
 
     res.status(200).json({
       success: true,
       message: "Login successful",
+      token,
       user: {
         _id: user._id,
         email: user.email,

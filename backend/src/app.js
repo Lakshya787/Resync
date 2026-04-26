@@ -36,6 +36,8 @@ import aiRouter from "./routes/ai.route.js";
 import dashboardRouter from "./routes/dashboard.route.js";
 import actionRouter from "./routes/action.route.js";
 import userRouter from "./routes/user.route.js";
+import transcriptRouter from "./routes/transcriptRoutes.js";
+import quizRouter from "./routes/quizRoutes.js";
 
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/goal", goalRouter);
@@ -45,5 +47,8 @@ app.use("/api/v1/ai", aiRouter);
 app.use("/api/v1/dashboard", dashboardRouter);
 app.use("/api/v1/actions", actionRouter);
 app.use("/api/v1/user", userRouter);
+
+app.use("/api/transcript", transcriptRouter);
+app.use("/api/quiz", quizRouter);
 
 export { app };

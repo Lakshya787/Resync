@@ -23,6 +23,7 @@ import ActionCalendar from "./pages/ActionCalendar.jsx";
 import Roadmap from "./pages/Roadmap.jsx";
 import Settings from "./pages/Settings.jsx";
 import VerifyEmailPage from "./pages/VerifyEmail.jsx";
+import VideoStudy from "./pages/VideoStudy.jsx";
 
 import DashboardLayout from "./layouts/DashboardLayout.jsx";
 import PublicLayout from "./layouts/PublicLayout.jsx";
@@ -52,8 +53,10 @@ const router = createBrowserRouter(
         <Route path="/calendar" element={<ActionCalendar />} />
         <Route path="/roadmap" element={<Roadmap />} />
         <Route path="/settings" element={<Settings/>}/>
+        <Route path="/video-study" element={<VideoStudy />} />
       </Route>
     </>
+
   )
 );
 

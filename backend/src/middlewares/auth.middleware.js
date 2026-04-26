@@ -5,9 +5,11 @@ export const authMiddleware = async (req, res, next) => {
   try {
     let token;
 
-    // 1️⃣ Get token from cookie
+    // 1️⃣ Get token from cookie or authorization header
     if (req.cookies && req.cookies.token) {
       token = req.cookies.token;
+    } else if (req.headers.authorization && req.headers.authorization.startsWith("Bearer ")) {
+      token = req.headers.authorization.split(" ")[1];
     }
 
     // 2️⃣ If no token → Unauthorized

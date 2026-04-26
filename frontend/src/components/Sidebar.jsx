@@ -96,14 +96,22 @@ export default function Sidebar() {
 
       </nav>
 
-      {/* FOOTER */}
+    {/* FOOTER */}
       <div className="pt-4 border-t-2 border-border text-center">
-        <Link
-          to="/login"
-          className={`flex items-center gap-3 text-xs font-bold text-foreground/50 hover:text-error transition uppercase tracking-widest ${expanded ? "justify-start" : "justify-center"}`}
+        <button
+          onClick={async () => {
+            try {
+              await import('../Api.js').then(m => m.default.post('/auth/logout'));
+            } catch (e) {
+              console.error(e);
+            }
+            localStorage.removeItem("token");
+            window.location.href = "/login";
+          }}
+          className={`w-full flex items-center gap-3 text-xs font-bold text-foreground/50 hover:text-error transition uppercase tracking-widest ${expanded ? "justify-start" : "justify-center"}`}
         >
           {expanded ? "Logout" : "X"}
-        </Link>
+        </button>
       </div>
 
     </aside>

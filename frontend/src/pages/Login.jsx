@@ -32,7 +32,12 @@ export default function Login() {
 
     try {
       setLoading(true);
-      await api.post("/auth/login", { email, password });
+      const response = await api.post("/auth/login", { email, password });
+      
+      if (response.data && response.data.token) {
+        localStorage.setItem("token", response.data.token);
+      }
+      
       navigate("/home");
     } catch (err) {
       setError(

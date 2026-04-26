@@ -24,3 +24,12 @@ export const generateAI = async (prompt) => {
     return response.text;
   }
 };
+
+export const parseGeminiJSON = (text) => {
+  const clean = text.replace(/```json|```/g, "").trim();
+  try {
+    return JSON.parse(clean);
+  } catch {
+    throw new Error("Failed to parse Gemini response as JSON");
+  }
+};
