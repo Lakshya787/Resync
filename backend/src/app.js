@@ -47,8 +47,12 @@ app.use("/api/v1/ai", aiRouter);
 app.use("/api/v1/dashboard", dashboardRouter);
 app.use("/api/v1/actions", actionRouter);
 app.use("/api/v1/user", userRouter);
+// from
+app.use("/api/transcript", transcriptRoutes);
+app.use("/api/quiz", quizRoutes);
 
-app.use("/api/transcript", transcriptRouter);
-app.use("/api/quiz", quizRouter);
+// to
+app.use("/api/v1/transcript", transcriptRoutes);
+app.use("/api/v1/quiz", quizRoutes);
 
 export { app };
