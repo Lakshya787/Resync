@@ -1,22 +1,20 @@
 import { useState } from "react";
 import Card from "../components/Card.jsx";
 import Button from "../components/Button.jsx";
-import api from "../Api.js"; // Importing the configured axios instance
+import api from "../Api.js";
 
 const VideoStudy = () => {
-  // --- VIDEO & TRANSCRIPT STATE ---
   const [urlInput, setUrlInput] = useState("");
   const [videoId, setVideoId] = useState(null);
-  const [videoUrl, setVideoUrl] = useState(""); // to save original URL
+  const [videoUrl, setVideoUrl] = useState("");
   const [inputError, setInputError] = useState("");
   
-  const [transcriptStatus, setTranscriptStatus] = useState("default"); // 'default', 'loading', 'success', 'error'
+  const [transcriptStatus, setTranscriptStatus] = useState("default");
   const [transcriptData, setTranscriptData] = useState(null);
   const [transcriptError, setTranscriptError] = useState("");
   const [isWakingUp, setIsWakingUp] = useState(false);
 
-  // --- QUIZ STATE ---
-  const [quizState, setQuizState] = useState("not_started"); // 'not_started', 'generating', 'active', 'results'
+  const [quizState, setQuizState] = useState("not_started");
   const [difficulty, setDifficulty] = useState("Medium");
   const [questions, setQuestions] = useState([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -26,13 +24,11 @@ const VideoStudy = () => {
   const [quizError, setQuizError] = useState("");
 
   const handleLoadVideo = async () => {
-    // Reset all states
     setInputError("");
     setTranscriptStatus("default");
     setTranscriptData(null);
     setTranscriptError("");
     setIsWakingUp(false);
-    
     setQuizState("not_started");
     setQuestions([]);
     setCurrentQuestionIndex(0);
@@ -54,9 +50,7 @@ const VideoStudy = () => {
       } else if (urlObj.hostname.includes("youtu.be")) {
         extractedId = urlObj.pathname.slice(1);
       }
-    } catch (err) {
-      // Invalid URL format
-    }
+    } catch (err) {}
 
     if (!extractedId) {
       setInputError("Please enter a valid YouTube URL");
@@ -67,20 +61,14 @@ const VideoStudy = () => {
     setVideoUrl(urlInput);
     setTranscriptStatus("loading");
 
-    // Cold start logic for render.com (shows message if > 5 seconds)
-    const wakeUpTimer = setTimeout(() => {
-      setIsWakingUp(true);
-    }, 5000);
+    const wakeUpTimer = setTimeout(() => setIsWakingUp(true), 5000);
 
     try {
-      const res = await api.post("/api/transcript", { url: urlInput });
-      
+      const res = await api.post("/transcript", { url: urlInput });
       clearTimeout(wakeUpTimer);
       setIsWakingUp(false);
-      
       const transcriptText = res.data.transcript || "";
       const wordCount = transcriptText.trim() === "" ? 0 : transcriptText.trim().split(/\s+/).length;
-      
       setTranscriptData({ text: transcriptText, wordCount });
       setTranscriptStatus("success");
     } catch (err) {
@@ -93,16 +81,13 @@ const VideoStudy = () => {
 
   const handleGenerateQuiz = async () => {
     if (!transcriptData) return;
-    
     setQuizState("generating");
     setQuizError("");
-    
     try {
-      const res = await api.post("/api/quiz/generate", { 
-        transcript: transcriptData.text, 
-        difficulty 
+      const res = await api.post("/quiz/generate", {
+        transcript: transcriptData.text,
+        difficulty
       });
-      
       if (res.data.success && res.data.questions && res.data.questions.length > 0) {
         setQuestions(res.data.questions);
         setCurrentQuestionIndex(0);
@@ -120,12 +105,9 @@ const VideoStudy = () => {
   };
 
   const handleOptionSelect = (option) => {
-    // Prevent changing answer once selected
     if (selectedOption !== null) return;
-    
     setSelectedOption(option);
     const currentQ = questions[currentQuestionIndex];
-    
     if (option === currentQ.answer) {
       setScore(prev => prev + 1);
     } else {
@@ -146,9 +128,7 @@ const VideoStudy = () => {
 
   const handleFinishQuiz = () => {
     setQuizState("results");
-    
-    // Automatically save results
-    api.post("/api/quiz/result", {
+    api.post("/quiz/result", {
       videoId,
       videoUrl,
       score,
@@ -156,14 +136,10 @@ const VideoStudy = () => {
       wrongTopics,
       difficulty,
       date: new Date()
-    }).catch(err => {
-      console.error("Failed to save quiz result", err);
-    });
+    }).catch(err => console.error("Failed to save quiz result", err));
   };
 
-  const handleTryAgain = () => {
-    setQuizState("not_started");
-  };
+  const handleTryAgain = () => setQuizState("not_started");
 
   const handleLoadNewVideo = () => {
     setUrlInput("");
@@ -174,8 +150,6 @@ const VideoStudy = () => {
     setQuizState("not_started");
   };
 
-  // --- RENDER HELPERS ---
-  
   const renderQuizContent = () => {
     if (transcriptStatus === "default") {
       return (
@@ -191,9 +165,7 @@ const VideoStudy = () => {
       return (
         <div className="flex-1 flex flex-col items-center justify-center text-center p-4 space-y-4">
           <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-primary font-bold tracking-widest uppercase text-sm">
-            Extracting transcript...
-          </p>
+          <p className="text-primary font-bold tracking-widest uppercase text-sm">Extracting transcript...</p>
           {isWakingUp && (
             <p className="text-accent font-bold text-xs uppercase tracking-wider animate-pulse mt-2">
               Server is waking up, please wait...
@@ -207,30 +179,22 @@ const VideoStudy = () => {
       return (
         <div className="flex-1 flex flex-col items-center justify-center p-4">
           <div className="bg-danger/10 p-4 rounded-lg w-full border border-danger/20 text-center">
-            <p className="text-error font-bold uppercase tracking-widest text-sm mb-2">
-              Transcript Failed
-            </p>
-            <p className="text-foreground/80 font-medium text-sm">
-              {transcriptError}
-            </p>
+            <p className="text-error font-bold uppercase tracking-widest text-sm mb-2">Transcript Failed</p>
+            <p className="text-foreground/80 font-medium text-sm">{transcriptError}</p>
           </div>
         </div>
       );
     }
 
-    // Transcript is ready -> Render Quiz States
     if (quizState === "not_started") {
       return (
         <div className="flex-1 flex flex-col items-center justify-center text-center p-4 space-y-6 w-full">
           <div className="w-16 h-16 bg-secondary/20 text-secondary rounded-full flex items-center justify-center mb-2">
-            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <p className="text-secondary font-bold tracking-widest uppercase text-lg">
-            Transcript ready!
-          </p>
-          
+          <p className="text-secondary font-bold tracking-widest uppercase text-lg">Transcript ready!</p>
           <div className="w-full max-w-sm mt-8">
             <p className="text-sm font-bold uppercase tracking-widest text-foreground/50 mb-3">Select Difficulty</p>
             <div className="flex space-x-2 bg-muted p-1 rounded-lg w-full">
@@ -239,9 +203,9 @@ const VideoStudy = () => {
                   key={level}
                   onClick={() => setDifficulty(level)}
                   className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${
-                    difficulty === level 
-                    ? "bg-background shadow-sm text-primary" 
-                    : "text-foreground/60 hover:text-foreground"
+                    difficulty === level
+                      ? "bg-background shadow-sm text-primary"
+                      : "text-foreground/60 hover:text-foreground"
                   }`}
                 >
                   {level}
@@ -249,14 +213,8 @@ const VideoStudy = () => {
               ))}
             </div>
           </div>
-          
-          {quizError && (
-            <p className="text-error text-sm font-medium">{quizError}</p>
-          )}
-
-          <Button onClick={handleGenerateQuiz} className="w-full max-w-sm mt-4">
-            Generate Quiz
-          </Button>
+          {quizError && <p className="text-error text-sm font-medium">{quizError}</p>}
+          <Button onClick={handleGenerateQuiz} className="w-full max-w-sm mt-4">Generate Quiz</Button>
         </div>
       );
     }
@@ -265,9 +223,7 @@ const VideoStudy = () => {
       return (
         <div className="flex-1 flex flex-col items-center justify-center text-center p-4 space-y-4">
           <div className="w-10 h-10 border-4 border-secondary border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-secondary font-bold tracking-widest uppercase text-sm">
-            Generating quiz...
-          </p>
+          <p className="text-secondary font-bold tracking-widest uppercase text-sm">Generating quiz...</p>
         </div>
       );
     }
@@ -275,10 +231,8 @@ const VideoStudy = () => {
     if (quizState === "active") {
       const currentQ = questions[currentQuestionIndex];
       const isLastQuestion = currentQuestionIndex === questions.length - 1;
-      
       return (
         <div className="flex flex-col w-full h-full">
-          {/* Top Bar: Progress */}
           <div className="mb-6">
             <div className="flex justify-between items-center mb-2">
               <p className="text-sm font-bold uppercase tracking-widest text-foreground/50">
@@ -291,31 +245,21 @@ const VideoStudy = () => {
               )}
             </div>
             <div className="w-full bg-muted rounded-full h-2">
-              <div 
-                className="bg-primary h-2 rounded-full transition-all duration-300" 
-                style={{ width: `${((currentQuestionIndex) / questions.length) * 100}%` }}
+              <div
+                className="bg-primary h-2 rounded-full transition-all duration-300"
+                style={{ width: `${(currentQuestionIndex / questions.length) * 100}%` }}
               ></div>
             </div>
           </div>
-
-          {/* Question */}
-          <h3 className="text-lg font-bold mb-6 text-foreground">
-            {currentQ.question}
-          </h3>
-
-          {/* Options */}
+          <h3 className="text-lg font-bold mb-6 text-foreground">{currentQ.question}</h3>
           <div className="flex flex-col space-y-3 mb-6">
             {currentQ.options.map((opt, idx) => {
               const isSelected = selectedOption === opt;
               const isCorrectAnswer = opt === currentQ.answer;
-              
               let btnClass = "text-left px-4 py-3 rounded-lg border-2 text-sm font-medium transition-all ";
-              
               if (selectedOption === null) {
-                // Not yet answered
                 btnClass += "border-border hover:border-primary/50 hover:bg-muted";
               } else {
-                // Answered
                 if (isCorrectAnswer) {
                   btnClass += "border-green-500 bg-green-500/10 text-green-700 dark:text-green-400";
                 } else if (isSelected) {
@@ -324,30 +268,21 @@ const VideoStudy = () => {
                   btnClass += "border-border opacity-50";
                 }
               }
-
               return (
-                <button
-                  key={idx}
-                  onClick={() => handleOptionSelect(opt)}
-                  disabled={selectedOption !== null}
-                  className={btnClass}
-                >
+                <button key={idx} onClick={() => handleOptionSelect(opt)} disabled={selectedOption !== null} className={btnClass}>
                   {opt}
                 </button>
               );
             })}
           </div>
-
-          {/* Explanation & Next */}
           {selectedOption !== null && (
             <div className="mt-auto flex flex-col space-y-4 animate-in fade-in slide-in-from-bottom-4">
-              <div className={`p-4 rounded-lg border-l-4 ${selectedOption === currentQ.answer ? 'bg-green-500/10 border-green-500 text-green-800 dark:text-green-300' : 'bg-red-500/10 border-red-500 text-red-800 dark:text-red-300'}`}>
+              <div className={`p-4 rounded-lg border-l-4 ${selectedOption === currentQ.answer ? "bg-green-500/10 border-green-500 text-green-800 dark:text-green-300" : "bg-red-500/10 border-red-500 text-red-800 dark:text-red-300"}`}>
                 <p className="font-bold text-sm uppercase tracking-wide mb-1">
                   {selectedOption === currentQ.answer ? "Correct!" : "Incorrect"}
                 </p>
                 <p className="text-sm font-medium opacity-90">{currentQ.explanation}</p>
               </div>
-              
               <Button onClick={handleNextQuestion} className="w-full">
                 {isLastQuestion ? "See Results" : "Next Question"}
               </Button>
@@ -362,37 +297,25 @@ const VideoStudy = () => {
       let message = "Keep learning!";
       if (percentage >= 80) message = "Great job!";
       if (percentage === 100) message = "Perfect score!";
-
       return (
         <div className="flex-1 flex flex-col items-center justify-center text-center p-4 w-full">
           <div className="w-24 h-24 rounded-full flex items-center justify-center mb-6 bg-primary/10 border-4 border-primary text-primary">
             <h2 className="text-3xl font-extrabold">{score}/{questions.length}</h2>
           </div>
-          
           <h3 className="text-2xl font-extrabold mb-2 text-foreground">{message}</h3>
-          <p className="text-foreground/60 font-bold uppercase tracking-widest text-sm mb-8">
-            {percentage}% Correct
-          </p>
-
+          <p className="text-foreground/60 font-bold uppercase tracking-widest text-sm mb-8">{percentage}% Correct</p>
           {wrongTopics.length > 0 && (
             <div className="w-full mb-8">
-              <p className="text-xs font-bold uppercase tracking-widest text-foreground/50 mb-3 text-left">
-                Topics to Review
-              </p>
+              <p className="text-xs font-bold uppercase tracking-widest text-foreground/50 mb-3 text-left">Topics to Review</p>
               <div className="flex flex-wrap gap-2">
                 {wrongTopics.map((topic, i) => (
-                  <span key={i} className="bg-danger/10 text-error px-3 py-1 rounded-full text-xs font-bold uppercase">
-                    {topic}
-                  </span>
+                  <span key={i} className="bg-danger/10 text-error px-3 py-1 rounded-full text-xs font-bold uppercase">{topic}</span>
                 ))}
               </div>
             </div>
           )}
-
           <div className="flex flex-col space-y-3 w-full mt-auto">
-            <Button onClick={handleTryAgain} variant="primary" className="w-full">
-              Try Again
-            </Button>
+            <Button onClick={handleTryAgain} variant="primary" className="w-full">Try Again</Button>
             <Button onClick={handleLoadNewVideo} variant="outline" className="w-full bg-transparent border-2 border-border text-foreground hover:bg-muted">
               Load New Video
             </Button>
@@ -404,23 +327,12 @@ const VideoStudy = () => {
 
   return (
     <div className="space-y-8 h-full min-h-[calc(100vh-8rem)]">
-      {/* Header matching existing Resync pages */}
       <div className="bg-primary text-white p-8 rounded-lg">
-        <h1 className="text-4xl font-extrabold uppercase tracking-tight mb-2">
-          Video Study
-        </h1>
-        <p className="text-white/80 font-medium text-lg">
-          Master any topic directly from a YouTube video.
-        </p>
+        <h1 className="text-4xl font-extrabold uppercase tracking-tight mb-2">Video Study</h1>
+        <p className="text-white/80 font-medium text-lg">Master any topic directly from a YouTube video.</p>
       </div>
-
-      {/* Two Column Layout */}
       <div className="flex flex-col md:flex-row gap-8">
-        
-        {/* Left Column - 60% */}
         <div className="w-full md:w-[60%] flex flex-col space-y-4">
-          
-          {/* Input Bar */}
           <div>
             <div className="flex gap-2">
               <input
@@ -431,16 +343,10 @@ const VideoStudy = () => {
                 onChange={(e) => setUrlInput(e.target.value)}
                 disabled={transcriptStatus === "loading"}
               />
-              <Button onClick={handleLoadVideo} disabled={transcriptStatus === "loading"}>
-                Load Video
-              </Button>
+              <Button onClick={handleLoadVideo} disabled={transcriptStatus === "loading"}>Load Video</Button>
             </div>
-            {inputError && (
-              <p className="text-error font-bold mt-2 text-sm uppercase tracking-wide">{inputError}</p>
-            )}
+            {inputError && <p className="text-error font-bold mt-2 text-sm uppercase tracking-wide">{inputError}</p>}
           </div>
-
-          {/* 16:9 Video Frame / Placeholder */}
           <div className="aspect-video bg-black rounded-xl flex items-center justify-center border-4 border-muted overflow-hidden relative">
             {videoId ? (
               <iframe
@@ -451,29 +357,16 @@ const VideoStudy = () => {
                 title="YouTube Video"
               />
             ) : (
-              <p className="text-white/50 font-bold tracking-widest uppercase text-sm">
-                Paste a YouTube URL to begin
-              </p>
+              <p className="text-white/50 font-bold tracking-widest uppercase text-sm">Paste a YouTube URL to begin</p>
             )}
           </div>
         </div>
-
-        {/* Right Column - 40% */}
         <div className="w-full md:w-[40%] flex flex-col">
-          {/* Quiz Panel */}
           <Card bgColor="bg-background" className="flex flex-col h-full min-h-[400px] border-2 border-border p-6">
-            <h2 className="text-xl font-extrabold uppercase tracking-tight border-b-2 border-border pb-4 mb-6 shrink-0">
-              Quiz
-            </h2>
-            
-            {/* Dynamic Content Area */}
-            <div className="flex-1 flex flex-col">
-              {renderQuizContent()}
-            </div>
-            
+            <h2 className="text-xl font-extrabold uppercase tracking-tight border-b-2 border-border pb-4 mb-6 shrink-0">Quiz</h2>
+            <div className="flex-1 flex flex-col">{renderQuizContent()}</div>
           </Card>
         </div>
-
       </div>
     </div>
   );
