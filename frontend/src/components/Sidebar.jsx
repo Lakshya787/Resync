@@ -1,16 +1,6 @@
 import { NavLink, Link } from "react-router-dom";
 import { useState } from "react";
-import {
-  LayoutDashboard,
-  Target,
-  ListChecks,
-  CheckSquare,
-  Folder,
-  Calendar,
-  Map,
-  Settings,
-  Menu
-} from "lucide-react";
+import { LayoutDashboard, Target, ListChecks, CheckSquare, Folder, Calendar, Map, Settings, Menu, Video } from "lucide-react";
 
 export default function Sidebar() {
 
@@ -35,6 +25,7 @@ export default function Sidebar() {
     // productivity features
     { name: "Calendar", path: "/calendar", icon: Calendar },
     { name: "Roadmap", path: "/roadmap", icon: Map },
+    { name: "Video Study", path: "/video-study", icon: Video }, // NEW
 
     // system
     { name: "Settings", path: "/settings", icon: Settings }
