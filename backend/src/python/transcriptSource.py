@@ -74,14 +74,31 @@ try:
     import http.cookiejar
     import requests
 
-    cookie_path = os.path.join(os.path.dirname(__file__), "cookies.txt")
-    if os.path.exists(cookie_path):
-        cookie_jar = http.cookiejar.MozillaCookieJar(cookie_path)
-        cookie_jar.load(ignore_discard=True, ignore_expires=True)
+    # Try to load cookies.txt to bypass IP blocks
+    # Check multiple locations to make deployment easier (especially on Render)
+    cookie_paths = [
+        os.path.join(os.path.dirname(__file__), "cookies.txt"), # Local dev
+        "/etc/secrets/cookies.txt",                             # Render secret files
+        "cookies.txt",                                          # Current working dir
+        os.path.join(os.path.dirname(__file__), "..", "..", "cookies.txt") # backend root
+    ]
+    
+    cookie_jar = None
+    for path in cookie_paths:
+        if os.path.exists(path):
+            cookie_jar = http.cookiejar.MozillaCookieJar(path)
+            try:
+                cookie_jar.load(ignore_discard=True, ignore_expires=True)
+                print(f"[YT-API] Loaded cookies from {path}", file=sys.stderr)
+                break
+            except Exception as e:
+                print(f"[YT-API] Failed to load cookies from {path}: {e}", file=sys.stderr)
+                cookie_jar = None
+
+    if cookie_jar:
         session = requests.Session()
         session.cookies.update(cookie_jar)
         _yta = YouTubeTranscriptApi(http_client=session)
-        print("[YT-API] Loaded cookies.txt for authentication.", file=sys.stderr)
     else:
         _yta = YouTubeTranscriptApi()
 except ImportError:
