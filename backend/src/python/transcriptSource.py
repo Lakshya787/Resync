@@ -83,21 +83,34 @@ try:
         os.path.join(os.path.dirname(__file__), "..", "..", "cookies.txt") # backend root
     ]
     
-    cookie_jar = None
+    session = None
     for path in cookie_paths:
         if os.path.exists(path):
-            cookie_jar = http.cookiejar.MozillaCookieJar(path)
             try:
-                cookie_jar.load(ignore_discard=True, ignore_expires=True)
-                print(f"[YT-API] Loaded cookies from {path}", file=sys.stderr)
-                break
+                # Robust manual parsing in case the # Netscape header is missing
+                # which often happens when copy-pasting into Render
+                temp_session = requests.Session()
+                valid_cookies = 0
+                with open(path, "r", encoding="utf-8") as f:
+                    for line in f:
+                        if not line.strip() or line.strip().startswith("#"):
+                            continue
+                        parts = line.strip().split("\t")
+                        if len(parts) >= 7:
+                            domain, flag, path_str, secure, expiry, name, value = parts[:7]
+                            temp_session.cookies.set(name, value, domain=domain, path=path_str)
+                            valid_cookies += 1
+                
+                if valid_cookies > 0:
+                    session = temp_session
+                    print(f"[YT-API] Loaded {valid_cookies} cookies from {path}", file=sys.stderr)
+                    break
+                else:
+                    print(f"[YT-API] Found {path} but it contained no valid cookies", file=sys.stderr)
             except Exception as e:
-                print(f"[YT-API] Failed to load cookies from {path}: {e}", file=sys.stderr)
-                cookie_jar = None
+                print(f"[YT-API] Failed to parse cookies from {path}: {e}", file=sys.stderr)
 
-    if cookie_jar:
-        session = requests.Session()
-        session.cookies.update(cookie_jar)
+    if session:
         _yta = YouTubeTranscriptApi(http_client=session)
     else:
         _yta = YouTubeTranscriptApi()
