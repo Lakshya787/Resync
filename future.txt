@@ -1,0 +1,44 @@
+CONTEXT — Resync Project:
+You are working on Resync, an AI-powered learning roadmap system. The full project details are provided below for reference. Focus specifically on the VideoStudy module (VideoStudy.jsx on frontend, transcriptController.js + quizController.js + quizRoutes.js on backend, get_transcript.py for transcript extraction, QuizResult model for storing results).
+Current tech stack relevant to this module:
+
+Frontend: React 19, Vite, Tailwind CSS v4, Axios
+Backend: Express 5, Mongoose 9, Google Gemini API (gemini.service.js, quizPrompts.js)
+Python: youtube-transcript-api via subprocess
+DB Models: QuizResult (videoId, score, total, wrongTopics, difficulty, date)
+
+
+FEATURE TO ARCHITECT — Dynamic Time-Based VideoStudy + Quiz:
+I need you to design the complete architecture (no code yet — just the plan, data flow, component responsibilities, and API design) for an enhanced VideoStudy module with these requirements:
+
+Time-tracked watching — The user pastes a YouTube URL and starts a study session. The system tracks exactly how much of the video they have watched (e.g. 0–30 min out of a 2-hour video), not just total duration.
+Dynamic transcript slicing — When the session ends, only the transcript segment corresponding to the watched portion (start timestamp → end timestamp) is sent for quiz generation — NOT the full transcript.
+Quiz generation from watched segment only — Gemini generates an MCQ quiz based solely on the sliced transcript. Each question must have:
+
+The question text
+4 options (A/B/C/D)
+Correct answer
+A topic tag (e.g. "React Hooks", "Async/Await") derived from that question's content
+
+
+Weakness tracking — Wrong answers are stored with their topic tag. The existing QuizResult model's wrongTopics field should capture this. The /quiz/weaknesses endpoint should aggregate these topics across sessions to show the user their weak areas.
+Session end trigger — Quiz is only generated and shown AFTER the user explicitly ends the session (not during watching).
+
+Please provide:
+
+The full data flow from user pasting URL → watching → session end → quiz → result storage
+What each frontend component/page is responsible for vs what the backend handles
+API contract for any new or modified endpoints (method, path, request body, response shape)
+How timestamp tracking works on the frontend (since YouTube iframe doesn't push events natively — address this)
+How the transcript is sliced by time on the backend
+Any changes needed to the QuizResult model or quizPrompts.js
+Potential edge cases and how to handle them (e.g. no transcript available, user skips around, very short watch time)
+
+Constraints:
+
+Do NOT write actual code. Architecture and planning only.
+Keep it compatible with the existing Resync stack — no new major dependencies unless absolutely necessary and justified.
+Quiz and Transcript routes currently have no auth middleware — flag if this should change.
+
+
+Paste this into a new Claude conversation along with your information.txt document and it'll give you 

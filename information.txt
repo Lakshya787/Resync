@@ -1,0 +1,628 @@
+
+==========================================================
+SECTION 1: PROJECT METADATA
+==========================================================
+
+Name        : Resync
+Version     : 0.0.0 (frontend) / 1.0.0 (backend & desktop)
+Description : AI-powered learning roadmap system. Users set a learning goal and
+              the system generates a structured roadmap (steps + daily actions)
+              powered by the Google Gemini API. Includes gamification (EXP, levels,
+              streaks), a VideoStudy feature, project submission, and a quiz engine.
+Author      : Lakshya
+License     : ISC (backend), Not specified (frontend/desktop)
+Repository  : https://github.com/Lakshya787/Resync (inferred from corpus name)
+Frontend URL: https://resync-liard.vercel.app
+Backend URL : Not publicly listed (runs on PORT 5000 locally)
+AI Service  : https://resync-zq7l.onrender.com (external Resync AI microservice)
+
+==========================================================
+SECTION 2: PROJECT STRUCTURE
+==========================================================
+
+Minor Project/               <- Monorepo root
+|-- README.md                <- High-level project overview
+|-- resource.txt             <- OpenAPI spec for external Resync AI service
+|-- package-lock.json        <- Root-level lockfile (minimal, no root package.json)
+|-- .gitignore               <- Git ignore rules
+|-- .github/                 <- GitHub config (workflows, etc.)
+|-- .vscode/                 <- VSCode workspace settings
+|
+|-- backend/                 <- Node.js / Express REST API server
+|   |-- .env                 <- Environment variables (secrets, DB URI, API keys)
+|   |-- package.json         <- Backend dependencies & scripts
+|   |-- check_db.js          <- Standalone DB connectivity check script
+|   |-- public/              <- Static file serving folder
+|   |-- src/
+|       |-- index.js         <- Entry point: connects DB, starts server
+|       |-- app.js           <- Express app setup: CORS, middleware, route mounting
+|       |-- constants.js     <- Shared constants
+|       |-- controllers/     <- Request handlers (business logic layer)
+|       |   |-- auth.controller.js         <- signup, login, logout, verifyEmail
+|       |   |-- goal.controller.js         <- CRUD + AI goal generation
+|       |   |-- step.controller.js         <- Learning step management
+|       |   |-- action.controller.js       <- Daily action + timer session logic
+|       |   |-- dashboard.controller.js    <- Aggregated dashboard stats
+|       |   |-- project.controller.js      <- Project submission handling
+|       |   |-- user.controller.js         <- Profile update, password change
+|       |   |-- quizController.js          <- Quiz generation + results
+|       |   |-- transcriptController.js    <- YouTube transcript extraction (via Python)
+|       |   |-- ai.controller.js           <- AI utility endpoint
+|       |   |-- actionog.js                <- Older/backup action controller
+|       |   |-- quiz.controller.js         <- Empty (stub/placeholder)
+|       |   |-- test.controller.js         <- Test endpoint controller
+|       |-- models/          <- Mongoose schemas
+|       |   |-- user.model.js              <- User (auth, level, EXP, streak)
+|       |   |-- goal.model.js              <- Goal (name, category, roadmap, resources)
+|       |   |-- userGoal.model.js          <- User<->Goal join (status, pace)
+|       |   |-- learningStep.model.js      <- Ordered step in a goal roadmap
+|       |   |-- userActiveStep.model.js    <- Which step a user is currently on
+|       |   |-- action.model.js            <- Daily learning action with timer
+|       |   |-- skill.model.js             <- Skill entity
+|       |   |-- userSkill.model.js         <- User<->Skill proficiency mapping
+|       |   |-- projectSubmission.model.js <- Project repo link submissions
+|       |   |-- QuizResult.js              <- VideoStudy quiz scores
+|       |   |-- aiResultLog.model.js       <- Logs of AI generation results
+|       |   |-- quiz.model.js              <- Empty (stub/placeholder)
+|       |-- routes/          <- Express routers
+|       |   |-- auth.route.js              <- /api/v1/auth
+|       |   |-- goal.route.js              <- /api/v1/goal
+|       |   |-- step.route.js              <- /api/v1/step
+|       |   |-- action.route.js            <- /api/v1/actions
+|       |   |-- dashboard.route.js         <- /api/v1/dashboard
+|       |   |-- project.route.js           <- /api/v1/project
+|       |   |-- user.route.js              <- /api/v1/user
+|       |   |-- ai.route.js                <- /api/v1/ai
+|       |   |-- quizRoutes.js              <- /api/v1/quiz
+|       |   |-- transcriptRoutes.js        <- /api/v1/transcript
+|       |-- middlewares/
+|       |   |-- auth.middleware.js         <- JWT verification (cookie or Bearer)
+|       |   |-- multer.middleware.js       <- File upload handling
+|       |-- services/
+|       |   |-- gemini.service.js          <- Google Gemini API wrapper (primary + fallback key)
+|       |   |-- exp.service.js             <- EXP grant + level-up + streak logic
+|       |   |-- action.service.js          <- Action scheduling logic
+|       |   |-- email.service.js           <- Email dispatch (Nodemailer/Brevo)
+|       |   |-- mail.service.js            <- Mailtrap integration
+|       |   |-- goal.service.js            <- Empty stub
+|       |   |-- step.service.js            <- Empty stub
+|       |   |-- project.service.js         <- Empty stub
+|       |-- prompts/
+|       |   |-- quizPrompts.js             <- Gemini prompt templates for quiz generation
+|       |   |-- actions.js                 <- Empty stub
+|       |   |-- steps.js                   <- Empty stub
+|       |-- python/
+|       |   |-- get_transcript.py          <- Extracts YouTube transcript via youtube-transcript-api
+|       |-- db/
+|       |   |-- index.js                   <- MongoDB connection via Mongoose
+|       |-- utils/
+|       |-- validators/
+|       |-- mailtrap/
+|
+|-- frontend/                <- React 19 SPA (Vite + Tailwind CSS v4)
+|   |-- index.html           <- HTML shell
+|   |-- vite.config.js       <- Vite config (React plugin, Tailwind, Lottie assets)
+|   |-- vercel.json          <- SPA rewrite rules for Vercel deployment
+|   |-- eslint.config.js     <- ESLint config
+|   |-- package.json         <- Frontend dependencies
+|   |-- login.txt            <- Plaintext credential notes (dev only)
+|   |-- public/              <- Static assets (favicon, etc.)
+|   |-- dist/                <- Production build output
+|   |-- src/
+|       |-- main.jsx         <- React entry: router setup, all routes declared
+|       |-- App.jsx          <- Root component
+|       |-- Api.js           <- Axios instance (base URL, withCredentials)
+|       |-- index.css        <- Global CSS / Tailwind directives
+|       |-- App.css          <- Component-level styles
+|       |-- assets/          <- Images, Lottie animation files
+|       |-- layouts/
+|       |   |-- DashboardLayout.jsx  <- Protected layout with sidebar
+|       |   |-- PublicLayout.jsx     <- Public layout wrapper
+|       |-- pages/
+|       |   |-- Start.jsx            <- Landing / welcome page
+|       |   |-- About.jsx            <- About page
+|       |   |-- Login.jsx            <- Login form
+|       |   |-- Register.jsx         <- Registration form
+|       |   |-- VerifyEmail.jsx      <- Email verification handler
+|       |   |-- Dashboard.jsx        <- Home dashboard (stats, progress)
+|       |   |-- Goal.jsx             <- Goal creation and management
+|       |   |-- Step.jsx             <- Current learning step view
+|       |   |-- Action.jsx           <- Daily action + timer session
+|       |   |-- ActionCalendar.jsx   <- Calendar view of action history
+|       |   |-- Roadmap.jsx          <- Full goal roadmap visualization
+|       |   |-- Project.jsx          <- Project submission page
+|       |   |-- Settings.jsx         <- User profile/settings
+|       |   |-- VideoStudy.jsx       <- YouTube video study + AI quiz generation
+|       |-- components/
+|           |-- Navbar.jsx, Sidebar.jsx, Footer.jsx
+|           |-- Button.jsx, Card.jsx, Input.jsx
+|           |-- UserStatus.jsx, StreakFire.jsx, ResyncLogo.jsx
+|           |-- ActionTooltip.jsx, CalendarDay.jsx, Layout.jsx (empty)
+|
+|-- desktop/                 <- Electron wrapper for desktop app
+    |-- main.js              <- Electron BrowserWindow (loads production Vercel URL)
+    |-- preload.js           <- Context bridge (minimize/maximize/close IPC)
+    |-- package.json         <- Electron + electron-builder config
+    |-- assets/              <- App icons
+    |-- dist/                <- Electron build output
+
+==========================================================
+SECTION 3: TECH STACK
+==========================================================
+
+LAYER           TECHNOLOGY
+-----------     -------------------------------------------
+Language        JavaScript (ES Modules throughout), Python 3
+Runtime         Node.js (backend), Browser (frontend)
+Frontend FW     React 19
+Build Tool      Vite 7
+CSS             Tailwind CSS v4 (via @tailwindcss/vite plugin)
+Icons           lucide-react
+Animations      @lottiefiles/dotlottie-react
+HTTP Client     Axios
+Routing         react-router-dom v7
+Backend FW      Express 5
+Database        MongoDB Atlas (cloud) via Mongoose 9
+Authentication  JWT (jsonwebtoken) + HttpOnly cookie
+Password Hash   bcryptjs
+File Upload     Multer
+Image Storage   Cloudinary
+AI / LLM        Google Gemini API (@google/genai) - model: gemini-3-flash-preview
+Email (primary) Nodemailer + Brevo (Sendinblue) API
+Email (sandbox) Mailtrap (sandbox SMTP + API)
+Desktop         Electron 41 + electron-builder
+Python Lib      youtube-transcript-api (transcript extraction)
+Linter          ESLint 9
+Formatter       Prettier
+Dev Server      nodemon (backend hot-reload)
+Deployment      Frontend: Vercel | Backend: not specified | AI svc: Render
+External AI Svc Resync AI (https://resync-zq7l.onrender.com) - FastAPI/Python
+
+==========================================================
+SECTION 4: ARCHITECTURE
+==========================================================
+
+Pattern: Monorepo with three independently deployable sub-applications.
+         Backend follows an MVC-like layered architecture.
+
+OVERALL FLOW:
+  Browser/Desktop -> React SPA (Vercel)
+                  -> Axios (withCredentials, HttpOnly JWT cookie)
+                  -> Express REST API (Node.js backend)
+                  -> MongoDB Atlas (Mongoose ODM)
+                  -> Google Gemini API (AI generation)
+                  -> Resync AI Service (external, roadmap + video recommendations)
+                  -> Python subprocess (YouTube transcript)
+                  -> Cloudinary (avatar uploads)
+                  -> Brevo/Mailtrap (email)
+
+BACKEND LAYERS:
+  1. Routes      - Define HTTP endpoints, apply middleware
+  2. Middlewares - authMiddleware (JWT), multer (file upload)
+  3. Controllers - Handle req/res, orchestrate service calls
+  4. Services    - Pure business logic (Gemini, EXP, email, actions)
+  5. Models      - Mongoose schemas (data persistence)
+  6. Prompts     - Gemini prompt templates
+
+FRONTEND LAYERS:
+  1. main.jsx     - Router with Public and Dashboard (protected) route groups
+  2. Layouts      - PublicLayout / DashboardLayout (sidebar + navbar)
+  3. Pages        - Feature-level views
+  4. Components   - Shared, reusable UI elements
+  5. Api.js       - Centralized Axios instance
+
+GAMIFICATION SYSTEM:
+  - EXP formula      : gainedExp = floor(baseExp * (1 + min(streak * 0.05, 1)))
+  - Level-up formula : expRequired(level) = floor(300 * level^1.6), max level 100
+  - Streak tracked daily; resets if user misses a day
+
+==========================================================
+SECTION 5: DATABASE MODELS
+==========================================================
+
+Model               Key Fields
+------------------  ---------------------------------------------------
+User                username, email, password(hashed), fullname, avatar,
+                    level(1-100), exp, totalExp, currentStreak,
+                    lastActionDate, isVerified, verificationToken,
+                    resetPasswordToken, education, lastLogin
+Goal                name, category(skill/exam/career), description,
+                    createdBy(User), roadmap[], resources[]
+UserGoal            user, goal, pacePreference(slow/medium/fast),
+                    status(active/completed/paused), startedAt
+LearningStep        goal, type(learn/project/revision/specialization),
+                    title, description, skill, estimatedDays, sequence
+UserActiveStep      user, goal, step, status(active/completed/paused),
+                    deadline, completedAt
+Action              user, userActiveStep, step, title, description,
+                    skill, difficultyLevel(1-5), estimatedMinutes,
+                    minRequiredMinutes, totalTrackedMinutes,
+                    lastSessionStart, status(pending/in-progress/completed/expired),
+                    sequence, expiresAt
+Skill               (schema file present, small)
+UserSkill           user-to-skill proficiency mapping
+ProjectSubmission   user, step, repoLink, description, approved(bool)
+QuizResult          userId, videoId, videoUrl, score, total, wrongTopics,
+                    difficulty(easy/medium/hard), date
+AIResultLog         Logs raw AI generation attempts/results
+
+Notable Indexes:
+  - Action: unique partial index on {user, status} WHERE status='in-progress'
+  - UserGoal: unique partial index on {user, status} WHERE status='active'
+  - UserActiveStep: unique partial index on {user, goal, status} WHERE status='active'
+  - QuizResult: index on {createdAt: -1}
+
+==========================================================
+SECTION 6: API ENDPOINTS
+==========================================================
+
+All routes are prefixed with /api/v1/
+Routes marked [AUTH] require a valid JWT (cookie or Authorization: Bearer <token>).
+
+--- AUTH (/api/v1/auth) ---
+POST   /signup           Body: {email, password, fullname, username}
+                         Creates user, sends email verification link.
+POST   /login            Body: {email, password}
+                         Returns JWT in HttpOnly cookie + response body.
+POST   /logout           Clears JWT cookie.
+GET    /verify-email     Query: ?token=<verificationToken>
+                         Activates account.
+
+--- GOAL (/api/v1/goal) [AUTH] ---
+GET    /                 Returns all goals for current user.
+POST   /create           Body: {name, category, description, ...}
+                         Calls Resync AI service for roadmap + resources.
+POST   /select           Body: {goalId, pacePreference}
+                         Activates a goal for the user.
+GET    /active           Returns user's currently active goal.
+PATCH  /pause            Pauses current active goal.
+DELETE /:goalId          Deletes a goal.
+
+--- STEP (/api/v1/step) [AUTH] ---
+GET    /active           Returns user's current active learning step.
+POST   /create           Manually creates a step.
+POST   /complete         Marks a step as completed.
+GET    /history          Returns completed steps.
+
+--- ACTION (/api/v1/actions) [AUTH] ---
+GET    /active           Returns user's current active daily action.
+POST   /start-session    Starts a timed learning session for action.
+POST   /stop-session     Stops the timed session, logs minutes.
+POST   /complete         Completes the action; grants EXP.
+GET    /history          Returns past completed actions.
+
+--- DASHBOARD (/api/v1/dashboard) [AUTH] ---
+GET    /                 Returns aggregated stats: level, EXP, streak,
+                         goal progress, recent actions.
+
+--- PROJECT (/api/v1/project) [AUTH] ---
+POST   /submit           Body: {stepId, repoLink, description}
+GET    /history          Returns user's project submissions.
+
+--- USER (/api/v1/user) [AUTH] ---
+PATCH  /update-profile   Body: {fullname, username, avatar, education}
+PATCH  /change-password  Body: {currentPassword, newPassword}
+
+--- AI (/api/v1/ai) [AUTH] ---
+(Minimal stub endpoint for AI utilities)
+
+--- TRANSCRIPT (/api/v1/transcript) ---
+POST   /                 Body: {videoId}
+                         Spawns Python subprocess to extract YouTube transcript.
+GET    /health           Returns {status: "ok", timestamp}
+
+--- QUIZ (/api/v1/quiz) ---
+POST   /generate         Body: {transcript, difficulty, numQuestions}
+                         Calls Gemini to generate MCQ quiz from transcript.
+POST   /result           Body: {videoId, score, total, wrongTopics, difficulty}
+                         Saves quiz result to DB.
+GET    /history          Returns all quiz results.
+GET    /weaknesses       Analyzes quiz history to identify weak topics.
+GET    /health           Returns {status: "ok", timestamp}
+
+--- EXTERNAL: Resync AI Service (https://resync-zq7l.onrender.com) ---
+POST   /recommend        Body: {goal, user_id, max_videos}
+                         Returns video recommendations + learning roadmap.
+POST   /next-step        Body: {user_id, completed_steps}
+                         Returns next roadmap step + remaining progress.
+GET    /health           Health check.
+
+==========================================================
+SECTION 7: AUTHENTICATION & SECURITY
+==========================================================
+
+Mechanism    : JWT (jsonwebtoken)
+Token Storage: HttpOnly cookie named "token" (primary) OR
+               Authorization: Bearer <token> header (fallback)
+Token set by : generateTokenAndSetCookie utility on login
+Cookie flags : httpOnly: true, sameSite: "strict",
+               secure: true in production
+Email verify : Required before login. Token expires in 24 hours.
+Password hash: bcryptjs with salt rounds = 10
+CORS Policy  : Whitelist-based:
+               - http://localhost:5173 (dev)
+               - https://resync-liard.vercel.app (production)
+               credentials: true
+
+SECURITY CONCERNS:
+  [!] The .env file is committed (or accessible) and contains live secrets:
+      MongoDB Atlas credentials, JWT secret, Gemini API keys, Cloudinary
+      credentials, Mailtrap credentials, Brevo API key, Gmail app password.
+      These should be rotated and never committed to version control.
+  [!] login.txt in frontend/ contains plaintext credentials (dev artifact).
+  [!] Quiz and Transcript routes do NOT enforce authMiddleware (no auth check).
+  [!] Quiz userId stored as plain String, not ObjectId reference.
+  [!] ProjectSubmission.approved defaults to true (self-approval, no review).
+
+==========================================================
+SECTION 8: ENVIRONMENT VARIABLES
+==========================================================
+
+File: backend/.env
+
+Variable                  Purpose
+------------------------  -----------------------------------------------
+PORT                      Server listen port (default: 5000)
+BASE_URL                  Backend base URL (e.g. http://localhost:5000)
+MONGODB_URI               MongoDB Atlas connection string
+JWT_SECRET                Secret key for signing JWTs
+NODE_ENV                  Runtime environment: development | production
+FRONTEND_URL              Frontend URL (used in verification email links)
+CORS_ORIGIN               Allowed CORS origin for production
+GEMINI_API_KEY            Primary Google Gemini API key
+GEMINI_API_KEY_1          Fallback Google Gemini API key
+CLOUDINARY_CLOUD_NAME     Cloudinary cloud name (avatar uploads)
+CLOUDINARY_API_KEY        Cloudinary API key
+CLOUDINARY_API_SECRET     Cloudinary API secret
+MAILTRAP_API_KEY          Mailtrap API key (sandbox email)
+MAILTRAP_INBOX_ID         Mailtrap inbox ID
+MAILTRAP_USE_SANDBOX      "true" to use Mailtrap sandbox
+MAILTRAP_HOST             Mailtrap SMTP host
+MAILTRAP_PORT             Mailtrap SMTP port
+MAILTRAP_USER             Mailtrap SMTP username
+MAILTRAP_PASS             Mailtrap SMTP password
+BREVO_API_KEY             Brevo (Sendinblue) API key (production email)
+EMAIL_USER                Gmail address for Nodemailer fallback
+EMAIL_PASS                Gmail app password for Nodemailer
+HTTP_PROXY                (Optional) Proxy for Python transcript fetching
+HTTPS_PROXY               (Optional) Proxy for Python transcript fetching
+
+Frontend has no .env — API base URL is hardcoded or set in Api.js.
+
+==========================================================
+SECTION 9: DEPENDENCIES
+==========================================================
+
+--- BACKEND (production) ---
+Package                Version     Purpose
+---------------------  ----------  -----------------------------------
+@google/genai          ^1.41.0     Google Gemini AI SDK
+bcryptjs               ^3.0.3      Password hashing
+cloudinary             ^2.9.0      Image/avatar cloud storage
+cookie-parser          ^1.4.7      Parse HTTP cookies
+cors                   ^2.8.6      Cross-origin resource sharing
+crypto                 ^1.0.1      Cryptographic utilities (token gen)
+dotenv                 ^17.3.1     Load .env variables
+express                ^5.2.1      Web framework
+jsonwebtoken           ^9.0.3      JWT creation and verification
+mailtrap               ^4.4.0      Mailtrap email SDK
+mongoose               ^9.2.1      MongoDB ODM
+multer                 ^2.1.1      Multipart file upload handling
+nodemailer             ^7.0.13     SMTP email sending
+nodemon                ^3.1.11     Dev hot-reload
+prettier               ^3.8.1      Code formatting
+sib-api-v3-sdk         ^8.5.0      Brevo (Sendinblue) email API
+
+--- FRONTEND (production) ---
+Package                    Version     Purpose
+-------------------------  ----------  -----------------------------------
+react                      ^19.2.0     UI framework
+react-dom                  ^19.2.0     React DOM renderer
+react-router-dom           ^7.13.0     Client-side routing
+axios                      ^1.13.5     HTTP client
+tailwindcss                ^4.1.18     Utility-first CSS framework
+@tailwindcss/vite          ^4.1.18     Tailwind Vite integration plugin
+lucide-react               ^0.577.0    Icon library
+@lottiefiles/dotlottie-react ^0.18.3   Lottie animation player
+
+--- FRONTEND (dev) ---
+Package                    Version     Purpose
+-------------------------  ----------  -----------------------------------
+vite                       ^7.2.4      Build tool and dev server
+@vitejs/plugin-react        ^5.1.1      React fast-refresh plugin
+eslint                      ^9.39.1     Linting
+eslint-plugin-react-hooks   ^7.0.1      React hooks lint rules
+eslint-plugin-react-refresh ^0.4.24     React refresh lint rules
+@eslint/js                  ^9.39.1     ESLint core JS rules
+globals                     ^16.5.0     Global variable definitions
+@types/react                ^19.2.5     TypeScript types for React
+@types/react-dom            ^19.2.3     TypeScript types for React DOM
+
+--- DESKTOP ---
+Package            Version     Purpose
+-----------------  ----------  -----------------------------------
+electron           ^41.1.0     Desktop app shell
+electron-builder   ^26.8.1     Desktop app packaging/installer
+
+--- PYTHON (external dependency, not in package.json) ---
+youtube-transcript-api      YouTube transcript extraction
+
+==========================================================
+SECTION 10: SETUP & RUN INSTRUCTIONS
+==========================================================
+
+PREREQUISITES:
+  - Node.js >= 18.x
+  - npm >= 9.x
+  - Python 3.x with pip
+  - MongoDB Atlas account (or local MongoDB)
+  - Google Gemini API key
+  - Cloudinary account
+  - Mailtrap or Brevo account (for email)
+
+1. CLONE THE REPO:
+   git clone <repo-url>
+   cd "Minor Project"
+
+2. BACKEND SETUP:
+   cd backend
+   npm install
+   # Create/edit .env with all required variables (see Section 8)
+   npm run dev              # Starts nodemon on http://localhost:5000
+
+3. PYTHON SETUP (for VideoStudy transcript feature):
+   pip install youtube-transcript-api
+
+4. FRONTEND SETUP:
+   cd frontend
+   npm install
+   npm run dev              # Starts Vite dev server on http://localhost:5173
+
+5. DESKTOP SETUP (optional):
+   cd desktop
+   npm install
+   npm start                # Loads https://resync-liard.vercel.app in Electron
+
+SCRIPTS SUMMARY:
+  backend:  npm run dev    -> nodemon src/index.js
+  backend:  npm start      -> node src/index.js
+  frontend: npm run dev    -> vite
+  frontend: npm run build  -> vite build
+  frontend: npm run lint   -> eslint .
+  frontend: npm run preview-> vite preview
+  desktop:  npm start      -> electron .
+  desktop:  npm run build  -> electron-builder
+
+==========================================================
+SECTION 11: BUSINESS LOGIC SUMMARY
+==========================================================
+
+Resync is a self-directed learning platform with AI-generated structure.
+
+CORE FLOW:
+  1. User registers and verifies email.
+  2. User creates a Goal (e.g., "Learn React", category: skill/exam/career).
+  3. Backend calls Resync AI microservice which uses LLM + YouTube discovery
+     to return a structured roadmap (ordered steps) + curated video resources.
+  4. User selects the goal with a pace preference (slow/medium/fast).
+  5. The system assigns the first LearningStep to the user (UserActiveStep).
+  6. Gemini generates daily Actions for that step (micro-tasks with estimated
+     time and difficulty level).
+  7. User works through Actions day-by-day using a built-in timer:
+     - Start session -> Stop session (minutes logged)
+     - When minimum required minutes met, action can be marked Complete.
+     - Completing an action grants EXP (boosted by streak multiplier).
+  8. When all actions for a step are done, user completes the Step.
+     For "project" type steps, user must submit a GitHub repo link.
+  9. System advances to the next step; level-up occurs when EXP threshold met.
+ 10. VideoStudy feature: user pastes a YouTube URL, transcript is extracted
+     via Python, Gemini generates an MCQ quiz, results are stored for
+     weakness analysis.
+ 11. Dashboard shows: level, EXP, streak, active goal/step/action, progress.
+
+==========================================================
+SECTION 12: FRONTEND ROUTES
+==========================================================
+
+PUBLIC ROUTES (no auth required):
+  /                  Start / landing page
+  /about             About page
+  /login             Login page
+  /register          Registration page
+  /verify-email      Email verification (query param: token)
+
+PROTECTED ROUTES (inside DashboardLayout, requires login):
+  /home              Dashboard (stats, progress overview)
+  /goal              Goal creation and management
+  /step              Current active step
+  /action            Current active daily action + timer
+  /calendar          Action history calendar
+  /roadmap           Full goal roadmap view
+  /project           Project submission
+  /settings          User profile and password settings
+  /video-study       YouTube video study + AI quiz
+
+==========================================================
+SECTION 13: NOTABLE ISSUES & TODOS
+==========================================================
+
+BUGS / CONCERNS:
+  [!] SECURITY: .env committed to repo — live API keys, DB credentials,
+      JWT secret, and email passwords are exposed. Immediate rotation needed.
+  [!] SECURITY: login.txt in frontend/ contains plaintext credentials.
+  [!] Transcript (/api/v1/transcript) and Quiz (/api/v1/quiz) endpoints
+      have NO authentication middleware — publicly accessible.
+  [!] quiz.controller.js and quiz.model.js are empty files (0 bytes).
+  [!] goal.service.js, step.service.js, project.service.js are empty stubs.
+  [!] prompts/actions.js and prompts/steps.js are empty stubs.
+  [!] components/Layout.jsx is empty.
+  [!] actionog.js in controllers appears to be an old/backup file —
+      likely dead code, not imported anywhere.
+  [!] gemini.service.js references model "gemini-3-flash-preview" —
+      this model name should be verified against Google's current API.
+  [!] Desktop app loads a hardcoded production URL (resync-liard.vercel.app)
+      with no offline fallback.
+  [!] ProjectSubmission.approved hardcoded to true — no review/moderation.
+  [!] QuizResult.userId is stored as String, not as a Mongoose ObjectId ref,
+      breaking relational integrity with the User model.
+  [!] No automated tests exist (test script just echoes an error).
+
+TODOS / FUTURE IMPROVEMENTS (from README):
+  - AI mentor guidance
+  - Adaptive learning pace
+  - Better roadmap generation
+  - Collaboration between learners
+
+DEPLOYMENT NOTES:
+  - Frontend is deployed on Vercel with SPA rewrite rules (vercel.json).
+  - Backend deployment platform not documented (runs on port 5000).
+  - Desktop Electron app bundles as Windows NSIS installer (appId: com.resync.desktop).
+  - Python (youtube-transcript-api) must be installed on backend server separately.
+  - Two Gemini API keys used (primary + fallback) for resilience.
+
+==========================================================
+END OF DOCUMENT
+Generated: 2026-05-15
+==========================================================
+
+CONTEXT — Resync Project:
+You are working on Resync, an AI-powered learning roadmap system. The full project details are provided below for reference. Focus specifically on the VideoStudy module (VideoStudy.jsx on frontend, transcriptController.js + quizController.js + quizRoutes.js on backend, get_transcript.py for transcript extraction, QuizResult model for storing results).
+Current tech stack relevant to this module:
+
+Frontend: React 19, Vite, Tailwind CSS v4, Axios
+Backend: Express 5, Mongoose 9, Google Gemini API (gemini.service.js, quizPrompts.js)
+Python: youtube-transcript-api via subprocess
+DB Models: QuizResult (videoId, score, total, wrongTopics, difficulty, date)
+
+
+FEATURE TO ARCHITECT — Dynamic Time-Based VideoStudy + Quiz:
+I need you to design the complete architecture (no code yet — just the plan, data flow, component responsibilities, and API design) for an enhanced VideoStudy module with these requirements:
+
+Time-tracked watching — The user pastes a YouTube URL and starts a study session. The system tracks exactly how much of the video they have watched (e.g. 0–30 min out of a 2-hour video), not just total duration.
+Dynamic transcript slicing — When the session ends, only the transcript segment corresponding to the watched portion (start timestamp → end timestamp) is sent for quiz generation — NOT the full transcript.
+Quiz generation from watched segment only — Gemini generates an MCQ quiz based solely on the sliced transcript. Each question must have:
+
+The question text
+4 options (A/B/C/D)
+Correct answer
+A topic tag (e.g. "React Hooks", "Async/Await") derived from that question's content
+
+
+Weakness tracking — Wrong answers are stored with their topic tag. The existing QuizResult model's wrongTopics field should capture this. The /quiz/weaknesses endpoint should aggregate these topics across sessions to show the user their weak areas.
+Session end trigger — Quiz is only generated and shown AFTER the user explicitly ends the session (not during watching).
+
+Please provide:
+
+The full data flow from user pasting URL → watching → session end → quiz → result storage
+What each frontend component/page is responsible for vs what the backend handles
+API contract for any new or modified endpoints (method, path, request body, response shape)
+How timestamp tracking works on the frontend (since YouTube iframe doesn't push events natively — address this)
+How the transcript is sliced by time on the backend
+Any changes needed to the QuizResult model or quizPrompts.js
+Potential edge cases and how to handle them (e.g. no transcript available, user skips around, very short watch time)
+
+Constraints:
+
+Do NOT write actual code. Architecture and planning only.
+Keep it compatible with the existing Resync stack — no new major dependencies unless absolutely necessary and justified.
+Quiz and Transcript routes currently have no auth middleware — flag if this should change.
