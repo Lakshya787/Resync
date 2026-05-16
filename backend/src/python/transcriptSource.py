@@ -488,7 +488,8 @@ def _fetch_via_official_api(video_id: str) -> Tuple[str, str]:
     if transcript:
         try:
             entries = transcript.fetch()
-            text    = " ".join(e.get("text", "") for e in entries).strip()
+            # Handle both dicts and FetchedTranscriptSnippet objects
+            text = " ".join(e.text if hasattr(e, "text") else e.get("text", "") for e in entries).strip()
             if text and len(text.split()) > MIN_WORDS:
                 gen_tag = "Auto-Generated" if transcript.is_generated else "Manual"
                 print(f"[YT-API] ✅ {gen_tag} English  words={len(text.split()):,}", file=sys.stderr)
@@ -566,17 +567,30 @@ def get_transcript_with_timestamps(url: str) -> list:
     if not video_id:
         return []
     try:
-        transcript = _yta.fetch(video_id, languages=["en", "en-US", "en-GB"])
-        entries    = transcript.to_raw_data()
-        return [
-            {
-                "start":    round(e.get("start",    0), 2),
-                "duration": round(e.get("duration", 0), 2),
-                "text":     clean_transcript(e.get("text", "")),
-            }
-            for e in entries
-            if e.get("text", "").strip()
-        ]
+        transcript_list = _yta.list(video_id)
+        transcript = transcript_list.find_transcript(["en", "en-US", "en-GB"])
+        entries    = transcript.fetch()
+        
+        segments = []
+        for e in entries:
+            # Handle both dictionary and FetchedTranscriptSnippet object
+            start = getattr(e, "start", None)
+            if start is None: start = e.get("start", 0)
+            
+            duration = getattr(e, "duration", None)
+            if duration is None: duration = e.get("duration", 0)
+            
+            text = getattr(e, "text", None)
+            if text is None: text = e.get("text", "")
+            
+            cleaned_text = clean_transcript(text)
+            if cleaned_text.strip():
+                segments.append({
+                    "start": round(start, 2),
+                    "duration": round(duration, 2),
+                    "text": cleaned_text,
+                })
+        return segments
     except Exception as e:
         print(f"[TIMESTAMPS] Failed: {e}", file=sys.stderr)
         return []
