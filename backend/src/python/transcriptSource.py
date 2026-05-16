@@ -447,7 +447,7 @@ def _fetch_via_official_api(video_id: str) -> Tuple[str, str]:
 
     Try order:
       1. English (manual > auto-generated)
-      2. Any available language
+      2. If no English, take the first available language and translate to English.
 
     Returns:
         (text, "official") on success
@@ -455,45 +455,46 @@ def _fetch_via_official_api(video_id: str) -> Tuple[str, str]:
     """
     print(f"[YT-API] Fetching: {video_id}", file=sys.stderr)
 
-    # English first
     try:
-        transcript = _yta.fetch(video_id, languages=["en", "en-US", "en-GB"])
-        entries    = transcript.to_raw_data()
-        text       = " ".join(e.get("text", "") for e in entries).strip()
-        if text and len(text.split()) > MIN_WORDS:
-            print(f"[YT-API] ✅ English  words={len(text.split()):,}", file=sys.stderr)
-            return text, "official"
+        transcript_list = _yta.list(video_id)
     except (IpBlocked, RequestBlocked):
         print("[YT-API] ❌ IP/Request blocked — add cookies.txt to bypass", file=sys.stderr)
         return "", "failed"
     except TranscriptsDisabled:
         print("[YT-API] Transcripts disabled for this video", file=sys.stderr)
         return "", "failed"
-    except (NoTranscriptFound, Exception) as e:
-        print(f"[YT-API] English unavailable: {type(e).__name__}", file=sys.stderr)
-
-    # Any available language
-    try:
-        transcript_list = _yta.list(video_id)
-        available       = [t.language_code for t in transcript_list]
-        print(f"[YT-API] Available languages: {available}", file=sys.stderr)
-
-        for lang in available:
-            try:
-                transcript = _yta.fetch(video_id, languages=[lang])
-                entries    = transcript.to_raw_data()
-                text       = " ".join(e.get("text", "") for e in entries).strip()
-                if text and len(text.split()) > MIN_WORDS:
-                    print(f"[YT-API] ✅ lang={lang}  words={len(text.split()):,}", file=sys.stderr)
-                    return text, "official"
-            except Exception:
-                continue
-    except (IpBlocked, RequestBlocked):
-        print("[YT-API] ❌ IP blocked on list", file=sys.stderr)
-    except VideoUnavailable:
-        print("[YT-API] Video unavailable", file=sys.stderr)
     except Exception as e:
-        print(f"[YT-API] List error: {e}", file=sys.stderr)
+        print(f"[YT-API] List unavailable: {type(e).__name__}", file=sys.stderr)
+        return "", "failed"
+
+    transcript = None
+    try:
+        # This automatically prefers manual over auto-generated if both exist
+        transcript = transcript_list.find_transcript(["en", "en-US", "en-GB"])
+    except NoTranscriptFound:
+        print("[YT-API] No native English transcript found. Trying to translate...", file=sys.stderr)
+        try:
+            # Fallback: get any translatable transcript and translate it to English
+            translatable = [t for t in transcript_list if t.is_translatable]
+            if translatable:
+                # Prefer manual transcripts for translation base, otherwise take the first auto-generated
+                manuals = [t for t in translatable if not t.is_generated]
+                base_transcript = manuals[0] if manuals else translatable[0]
+                transcript = base_transcript.translate("en")
+                print(f"[YT-API] Translating from {base_transcript.language} to English...", file=sys.stderr)
+        except Exception as e:
+            print(f"[YT-API] Translation fallback failed: {e}", file=sys.stderr)
+
+    if transcript:
+        try:
+            entries = transcript.fetch()
+            text    = " ".join(e.get("text", "") for e in entries).strip()
+            if text and len(text.split()) > MIN_WORDS:
+                gen_tag = "Auto-Generated" if transcript.is_generated else "Manual"
+                print(f"[YT-API] ✅ {gen_tag} English  words={len(text.split()):,}", file=sys.stderr)
+                return text, "official"
+        except Exception as e:
+            print(f"[YT-API] Fetch failed: {e}", file=sys.stderr)
 
     return "", "failed"
 
