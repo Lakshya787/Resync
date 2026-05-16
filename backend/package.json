@@ -9,7 +9,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node src/index.js",
-    "dev": "nodemon src/index.js"
+    "dev": "nodemon src/index.js",
+    "postinstall": "pip install -r requirements.txt || pip3 install -r requirements.txt || python -m pip install -r requirements.txt || echo '[WARN] pip not found, skipping Python deps'"
   },
   "dependencies": {
     "@google/genai": "^1.41.0",
