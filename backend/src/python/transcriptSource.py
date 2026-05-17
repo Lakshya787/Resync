@@ -266,8 +266,23 @@ def extract_video_id(url: str) -> Optional[str]:
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# Transcript Cleaning
+# Transcript Cleaning & Validation
 # ══════════════════════════════════════════════════════════════════════════════
+
+def is_english_text(text: str) -> bool:
+    """
+    Check if a string is primarily composed of Latin/English characters.
+    Useful for detecting mislabeled transcripts (e.g. Kannada labeled as 'en').
+    """
+    if not text:
+        return False
+    sample = text[:500]
+    non_whitespace = "".join(sample.split())
+    if not non_whitespace:
+        return False
+    
+    ascii_count = sum(1 for c in non_whitespace if ord(c) < 128)
+    return (ascii_count / len(non_whitespace)) >= 0.65
 
 def clean_transcript(text: str) -> str:
     """
@@ -498,32 +513,66 @@ def _fetch_via_official_api(video_id: str) -> Tuple[str, str]:
         return "", "failed"
 
     transcript = None
+    text = ""
+    
+    # 1. Try specifically requesting English
     try:
-        # This automatically prefers manual over auto-generated if both exist
-        transcript = transcript_list.find_transcript(["en", "en-US", "en-GB"])
+        candidate = transcript_list.find_transcript(["en", "en-US", "en-GB"])
+        candidate_entries = candidate.fetch()
+        candidate_text = " ".join(e.text if hasattr(e, "text") else e.get("text", "") for e in candidate_entries).strip()
+        
+        if is_english_text(candidate_text):
+            transcript = candidate
+            text = candidate_text
+        else:
+            print(f"[YT-API] Transcript tagged as '{candidate.language}' is not actually English text.", file=sys.stderr)
     except NoTranscriptFound:
-        print("[YT-API] No native English transcript found. Trying to translate...", file=sys.stderr)
+        pass
+        
+    # 2. Iterate through ALL transcripts to find genuine English
+    if not text:
+        print("[YT-API] Searching all transcripts for valid English text...", file=sys.stderr)
+        for t in transcript_list:
+            try:
+                t_entries = t.fetch()
+                t_text = " ".join(e.text if hasattr(e, "text") else e.get("text", "") for e in t_entries).strip()
+                if is_english_text(t_text):
+                    transcript = t
+                    text = t_text
+                    print(f"[YT-API] Found genuine English in transcript tagged '{t.language}'", file=sys.stderr)
+                    break
+            except Exception:
+                continue
+
+    # 3. If STILL no English found, translate the first translatable one
+    if not text:
+        print("[YT-API] No genuine English transcript found. Translating...", file=sys.stderr)
         try:
-            # Fallback: get any translatable transcript and translate it to English
             translatable = [t for t in transcript_list if t.is_translatable]
             if translatable:
-                # Prefer manual transcripts for translation base, otherwise take the first auto-generated
                 manuals = [t for t in translatable if not t.is_generated]
                 base_transcript = manuals[0] if manuals else translatable[0]
-                transcript = base_transcript.translate("en")
-                print(f"[YT-API] Translating from {base_transcript.language} to English...", file=sys.stderr)
+                
+                if base_transcript.language_code.startswith("en"):
+                    # Edge case: It's tagged English but it's not. 
+                    # If we try to translate it to 'en', API might fail.
+                    # We'll just fallback to returning whatever it is.
+                    entries = base_transcript.fetch()
+                    text = " ".join(e.text if hasattr(e, "text") else e.get("text", "") for e in entries).strip()
+                    transcript = base_transcript
+                else:
+                    translated = base_transcript.translate("en")
+                    entries = translated.fetch()
+                    text = " ".join(e.text if hasattr(e, "text") else e.get("text", "") for e in entries).strip()
+                    transcript = translated
         except Exception as e:
             print(f"[YT-API] Translation fallback failed: {e}", file=sys.stderr)
 
-    if transcript:
+    if transcript and text and len(text.split()) > MIN_WORDS:
         try:
-            entries = transcript.fetch()
-            # Handle both dicts and FetchedTranscriptSnippet objects
-            text = " ".join(e.text if hasattr(e, "text") else e.get("text", "") for e in entries).strip()
-            if text and len(text.split()) > MIN_WORDS:
-                gen_tag = "Auto-Generated" if transcript.is_generated else "Manual"
-                print(f"[YT-API] ✅ {gen_tag} English  words={len(text.split()):,}", file=sys.stderr)
-                return text, "official"
+            gen_tag = "Auto-Generated" if transcript.is_generated else "Manual"
+            print(f"[YT-API] ✅ {gen_tag} English  words={len(text.split()):,}", file=sys.stderr)
+            return text, "official"
         except Exception as e:
             print(f"[YT-API] Fetch failed: {e}", file=sys.stderr)
 
