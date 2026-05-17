@@ -98,8 +98,9 @@ try:
                         parts = line.strip().split("\t")
                         if len(parts) >= 7:
                             domain, flag, path_str, secure, expiry, name, value = parts[:7]
-                            temp_session.cookies.set(name, value, domain=domain, path=path_str)
-                            valid_cookies += 1
+                            if "youtube.com" in domain:
+                                temp_session.cookies.set(name, value, domain=domain, path=path_str)
+                                valid_cookies += 1
                 
                 if valid_cookies > 0:
                     session = temp_session
