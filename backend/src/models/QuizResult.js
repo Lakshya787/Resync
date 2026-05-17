@@ -13,6 +13,22 @@ const quizResultSchema = new mongoose.Schema(
     videoUrl: {
       type: String,
     },
+    quizName: {
+      type: String,
+      default: "Video Quiz",
+    },
+    detailedResults: {
+      type: [{
+        question: String,
+        options: [String],
+        answer: String,
+        userAnswer: String,
+        isCorrect: Boolean,
+        explanation: String,
+        topic: String,
+      }],
+      default: [],
+    },
     score: {
       type: Number,
       required: true,

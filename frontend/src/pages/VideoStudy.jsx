@@ -22,6 +22,7 @@ const VideoStudy = () => {
   const [score, setScore] = useState(0);
   const [wrongTopics, setWrongTopics] = useState([]);
   const [quizError, setQuizError] = useState("");
+  const [userAnswers, setUserAnswers] = useState([]);
 
   const handleLoadVideo = async () => {
     setInputError("");
@@ -36,6 +37,7 @@ const VideoStudy = () => {
     setScore(0);
     setWrongTopics([]);
     setQuizError("");
+    setUserAnswers([]);
 
     let extractedId = null;
 
@@ -94,6 +96,7 @@ const VideoStudy = () => {
         setSelectedOption(null);
         setScore(0);
         setWrongTopics([]);
+        setUserAnswers([]);
         setQuizState("active");
       } else {
         throw new Error("Invalid response format from generator.");
@@ -108,7 +111,23 @@ const VideoStudy = () => {
     if (selectedOption !== null) return;
     setSelectedOption(option);
     const currentQ = questions[currentQuestionIndex];
-    if (option === currentQ.answer) {
+    
+    const isCorrect = option === currentQ.answer;
+
+    setUserAnswers(prev => [
+      ...prev,
+      {
+        question: currentQ.question,
+        options: currentQ.options,
+        answer: currentQ.answer,
+        userAnswer: option,
+        isCorrect: isCorrect,
+        explanation: currentQ.explanation,
+        topic: currentQ.topic
+      }
+    ]);
+
+    if (isCorrect) {
       setScore(prev => prev + 1);
     } else {
       if (currentQ.topic && !wrongTopics.includes(currentQ.topic)) {
@@ -131,10 +150,12 @@ const VideoStudy = () => {
     api.post("/quiz/result", {
       videoId,
       videoUrl,
+      quizName: `Video Quiz - ${videoId}`,
       score,
       total: questions.length,
       wrongTopics,
       difficulty,
+      detailedResults: userAnswers,
       date: new Date()
     }).catch(err => console.error("Failed to save quiz result", err));
   };
@@ -148,6 +169,7 @@ const VideoStudy = () => {
     setTranscriptStatus("default");
     setTranscriptData(null);
     setQuizState("not_started");
+    setUserAnswers([]);
   };
 
   const renderQuizContent = () => {
@@ -297,9 +319,13 @@ const VideoStudy = () => {
       let message = "Keep learning!";
       if (percentage >= 80) message = "Great job!";
       if (percentage === 100) message = "Perfect score!";
+      
+      const correctAnswers = userAnswers.filter(ans => ans.isCorrect);
+      const incorrectAnswers = userAnswers.filter(ans => !ans.isCorrect);
+
       return (
-        <div className="flex-1 flex flex-col items-center justify-center text-center p-4 w-full">
-          <div className="w-24 h-24 rounded-full flex items-center justify-center mb-6 bg-primary/10 border-4 border-primary text-primary">
+        <div className="flex-1 flex flex-col items-center justify-start text-center p-4 w-full overflow-y-auto" style={{ maxHeight: "calc(100vh - 200px)" }}>
+          <div className="w-24 h-24 rounded-full flex items-center justify-center mb-6 bg-primary/10 border-4 border-primary text-primary shrink-0 mt-4">
             <h2 className="text-3xl font-extrabold">{score}/{questions.length}</h2>
           </div>
           <h3 className="text-2xl font-extrabold mb-2 text-foreground">{message}</h3>
@@ -314,7 +340,43 @@ const VideoStudy = () => {
               </div>
             </div>
           )}
-          <div className="flex flex-col space-y-3 w-full mt-auto">
+          
+          <div className="w-full text-left mt-2 space-y-6">
+            <h4 className="text-xl font-bold border-b border-border pb-2">Detailed Results</h4>
+            
+            {incorrectAnswers.length > 0 && (
+              <div className="space-y-4">
+                <h5 className="text-lg font-bold text-red-500 dark:text-red-400">Incorrect ({incorrectAnswers.length})</h5>
+                {incorrectAnswers.map((ans, idx) => (
+                  <div key={`inc-${idx}`} className="p-4 rounded-lg bg-red-500/5 border border-red-500/20">
+                    <p className="font-bold text-foreground mb-2">Q: {ans.question}</p>
+                    <p className="text-sm text-foreground/80 mb-1"><span className="font-semibold text-red-500 dark:text-red-400">Your Answer:</span> {ans.userAnswer}</p>
+                    <p className="text-sm text-foreground/80 mb-2"><span className="font-semibold text-green-500 dark:text-green-400">Correct Answer:</span> {ans.answer}</p>
+                    <div className="text-xs bg-background p-2 rounded border border-border">
+                      <span className="font-bold opacity-70">Explanation:</span> {ans.explanation}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {correctAnswers.length > 0 && (
+              <div className="space-y-4">
+                <h5 className="text-lg font-bold text-green-500 dark:text-green-400">Correct ({correctAnswers.length})</h5>
+                {correctAnswers.map((ans, idx) => (
+                  <div key={`cor-${idx}`} className="p-4 rounded-lg bg-green-500/5 border border-green-500/20">
+                    <p className="font-bold text-foreground mb-2">Q: {ans.question}</p>
+                    <p className="text-sm text-foreground/80 mb-2"><span className="font-semibold text-green-500 dark:text-green-400">Answer:</span> {ans.answer}</p>
+                    <div className="text-xs bg-background p-2 rounded border border-border">
+                      <span className="font-bold opacity-70">Explanation:</span> {ans.explanation}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="flex flex-col space-y-3 w-full mt-8 shrink-0 mb-4">
             <Button onClick={handleTryAgain} variant="primary" className="w-full">Try Again</Button>
             <Button onClick={handleLoadNewVideo} variant="outline" className="w-full bg-transparent border-2 border-border text-foreground hover:bg-muted">
               Load New Video

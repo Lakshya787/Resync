@@ -23,12 +23,14 @@ export const generateQuiz = async (req, res) => {
 
 export const saveResult = async (req, res) => {
   try {
-    const { videoId, videoUrl, score, total, wrongTopics, difficulty, date } = req.body;
+    const { videoId, videoUrl, quizName, detailedResults, score, total, wrongTopics, difficulty, date } = req.body;
 
     const newResult = new QuizResult({
       userId: req.user ? req.user._id : null,
       videoId,
       videoUrl,
+      quizName: quizName || "Video Quiz",
+      detailedResults: detailedResults || [],
       score,
       total,
       wrongTopics: wrongTopics || [],
