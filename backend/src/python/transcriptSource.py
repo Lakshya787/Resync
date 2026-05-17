@@ -581,6 +581,55 @@ def _fetch_via_official_api(video_id: str) -> Tuple[str, str]:
 
 
 # ══════════════════════════════════════════════════════════════════════════════
+# Supadata API fallback (cloud-safe)
+# ══════════════════════════════════════════════════════════════════════════════
+
+def _fetch_via_supadata(video_id: str) -> Tuple[str, str]:
+    """
+    Fetch transcript via Supadata API — a cloud-safe fallback when
+    youtube-transcript-api is IP-blocked (e.g. on Render / Heroku).
+
+    Requires SUPADATA_API_KEY in environment.
+    Returns (text, "supadata") on success, ("", "failed") on failure.
+    """
+    api_key = os.getenv("SUPADATA_API_KEY", "").strip()
+    if not api_key:
+        print("[SUPADATA] SUPADATA_API_KEY not set — skipping", file=sys.stderr)
+        return "", "failed"
+
+    print(f"[SUPADATA] Trying fallback for: {video_id}", file=sys.stderr)
+    try:
+        resp = requests.get(
+            "https://api.supadata.ai/v1/youtube/transcript",
+            params={"videoId": video_id, "text": "true"},
+            headers={"x-api-key": api_key},
+            timeout=30,
+        )
+        if resp.status_code != 200:
+            print(f"[SUPADATA] ❌ HTTP {resp.status_code}: {resp.text[:200]}", file=sys.stderr)
+            return "", "failed"
+
+        data = resp.json()
+        # Supadata returns {content: str} when text=true
+        text = data.get("content", "") or ""
+        if not text:
+            # Some responses return a list of segments
+            segments = data.get("transcript", data.get("segments", []))
+            if isinstance(segments, list):
+                text = " ".join(s.get("text", "") for s in segments)
+
+        if text and len(text.split()) > MIN_WORDS:
+            print(f"[SUPADATA] ✅ words={len(text.split()):,}", file=sys.stderr)
+            return text.strip(), "supadata"
+        else:
+            print("[SUPADATA] ❌ Empty transcript", file=sys.stderr)
+            return "", "failed"
+    except Exception as e:
+        print(f"[SUPADATA] ❌ Error: {e}", file=sys.stderr)
+        return "", "failed"
+
+
+# ══════════════════════════════════════════════════════════════════════════════
 # Public API
 # ══════════════════════════════════════════════════════════════════════════════
 
@@ -591,17 +640,14 @@ def get_transcript(url: str) -> Tuple[str, str]:
     Fetch priority:
       0. MongoDB cache          — instant, no API call
       1. youtube-transcript-api — direct fetch (cookies bypass if cookies.txt present)
-
-    On a fresh fetch, also pulls YouTube Data API v3 metadata (title, channel,
-    views, description analysis) if YOUTUBE_API_KEY is set, and stores
-    everything in MongoDB.
+      2. Supadata API           — cloud-safe fallback when IP is blocked
 
     Args:
         url: YouTube video URL or raw 11-char video ID
 
     Returns:
         (transcript_text, source)
-        source = "cache" | "official" | "none"
+        source = "cache" | "official" | "supadata" | "none"
     """
     video_id = extract_video_id(url)
     if not video_id:
@@ -622,12 +668,20 @@ def get_transcript(url: str) -> Tuple[str, str]:
         if text and len(text.split()) > MIN_WORDS:
             return clean_transcript(text), source
 
-    # 1 — youtube-transcript-api
+    # 1 — youtube-transcript-api (direct, works locally; may be IP-blocked on cloud)
     text, source = _fetch_via_official_api(video_id)
     if text and len(text.split()) > MIN_WORDS:
         cleaned  = clean_transcript(text)
         metadata = _fetch_enriched_metadata(video_id)
         _cache_set(video_id, cleaned, source, metadata)
+        return cleaned, source
+
+    # 2 — Supadata fallback (cloud-safe, uses residential IPs)
+    print("[RESULT] Direct fetch failed — trying Supadata fallback...", file=sys.stderr)
+    text, source = _fetch_via_supadata(video_id)
+    if text and len(text.split()) > MIN_WORDS:
+        cleaned = clean_transcript(text)
+        _cache_set(video_id, cleaned, source)
         return cleaned, source
 
     print("[RESULT] No transcript retrieved", file=sys.stderr)
